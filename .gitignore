@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.mkv
+*.mp4
+*.zip
+
+# Archivos locales auxiliares y notas
+*.bat
+prompt_para_antigravity.md
+mezcla_natural.py
+escaneo_secuencial.py
+puntero_seek_tell.py
