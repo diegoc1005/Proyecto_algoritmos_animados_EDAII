@@ -2,7 +2,7 @@
 
 Plataforma interactiva de visualización de algoritmos de almacenamiento externo desarrollada desde cero en Python para la materia de **Estructuras de Datos y Algoritmos II** (Facultad de Ingeniería, UNAM).
 
-> **Restricción Estricta:** Implementación pura desde cero, sin utilizar funciones nativas de ordenamiento ni bibliotecas automáticas (`sorted()`, `list.sort()`, `heapq`, `bisect`, `csv.reader`).
+> **Regla de Oro:** Implementación pura desde cero, sin utilizar funciones nativas de ordenamiento ni bibliotecas automáticas (`sorted()`, `list.sort()`, `heapq`, `bisect`, `csv.reader`).
 
 ---
 
@@ -21,55 +21,127 @@ Desde la terminal en la carpeta del proyecto:
 py -3 app.py
 ```
 
-*(Si el entorno no cuenta con `Flask`, `app.py` lo detecta, lo instala de manera automática y lanza el navegador web en `http://127.0.0.1:5000`).*
+*(Si no tienes `Flask` instalado, el script lo detecta, lo instala automáticamente y abre el navegador en `http://127.0.0.1:5000`).*
 
 ---
 
 ## Estructura del Proyecto
-- `app.py`: Servidor Flask y motor de ejecución algorítmica paso a paso en Python puro.
-- `templates/index.html`: Interfaz web interactiva con estética industrial, métricas de hardware y telemetría en tiempo real.
-- `datos/`: Archivos físicos sobre los que se ejecutan las llamadas reales de E/S (`empleados.dat` y `archivo_secuencial.txt`).
-- `apuntes_cap_6_archivos.md`: Notas teóricas sobre arquitectura de archivos y memoria secundaria.
-- `asignaci_n_de_algoritmos.md`: Distribución de algoritmos y responsabilidades por semana.
+- `app.py`: Servidor Flask y motor de ejecución paso a paso en Python puro.
+- `templates/index.html`: Interfaz web interactiva con panel de control, gráficos SVG y telemetría en tiempo real.
+- `datos/`: Archivos físicos sobre los que se ejecutan las llamadas reales de lectura/escritura (`empleados.dat` y `archivo_secuencial.txt`).
+- `apuntes_cap_6_archivos.md`: Notas teóricas del Capítulo 6.
+- `asignaci_n_de_algoritmos.md`: Asignación de temas y roles del equipo.
 
 ---
 
-## Explicación de los Algoritmos (Semana 1)
+## Guía Didáctica de Algoritmos (Semana 1)
+
+Esta sección está pensada para que cualquier estudiante pueda entender qué hace cada algoritmo, por qué existe y cómo funciona paso a paso.
+
+---
 
 ### 1. Mezcla Natural (*Natural Merge Sort*)
-* **Responsable:** Diego Córdova García
-* **Propósito:** Resolver el ordenamiento de grandes volúmenes de datos en memoria secundaria (donde el acceso aleatorio es costoso), minimizando el número de lecturas y escrituras al aprovechar el orden parcial que ya existe en los datos. A diferencia de la Mezcla Directa (que divide rígidamente en bloques de tamaño 1, 2, 4...), la Mezcla Natural adapta dinámicamente el tamaño de sus particiones a las secuencias preordenadas del archivo.
-* **Mecánica Paso a Paso:**
-  1. **Fase 1 (Detección de Tramos / *Runs*):** Se recorre el arreglo de izquierda a derecha. Mientras $A[i] \ge A[i-1]$, el elemento se mantiene en el tramo actual. En el momento en que se detecta una inversión ($A[i] < A[i-1]$), se realiza un corte lógico y comienza un nuevo tramo.
-  2. **Fase 2 (Fusión Iterativa de 2 Vías):** Se emparejan tramos consecutivos (por ejemplo, Tramo 1 con Tramo 2). Mediante dos punteros de comparación directa ($p_1, p_2$), se extrae secuencialmente el menor elemento hacia un arreglo de salida sin recurrir a bibliotecas de ordenamiento. Si queda un tramo impar sin pareja al final de la ronda, pasa directo a la siguiente fase.
-  3. **Convergencia:** Las rondas de fusión continúan hasta consolidar un único tramo que contiene toda la secuencia ordenada.
-* **Complejidad:**
-  - Mejor caso: $\mathcal{O}(N)$ si los datos ya están ordenados (un solo tramo detectado en una pasada).
-  - Caso promedio y peor caso: $\mathcal{O}(N \log k)$, donde $k$ es el número de tramos naturales iniciales ($k \le N$).
+* **Responsable:** Diego Córdova García  
+* **Concepto Clave:** *Aprovechar el orden que ya existe por suerte.*
+
+#### ¿Qué problema resuelve?
+Imagina que tienes un archivo de 50 GB con calificaciones y tu computadora solo tiene 8 GB de RAM. No puedes cargar todo el archivo a la memoria para ordenarlo con QuickSort. Tienes que ordenarlo en el disco duro poco a poco.
+* La **Mezcla Directa** divide rígidamente la lista en pedacitos de tamaño fijo (de 1 en 1, luego de 2 en 2, luego de 4 en 4...), ignorando si los datos ya venían medio ordenados.
+* La **Mezcla Natural** es más inteligente: revisa la lista y busca pedazos que **ya estén ordenados de forma natural**.
+
+#### La Analogía de la Baraja y las Tijeras ✂️:
+Imagina que te reparten estos números:  
+`[3, 7, 9,   2, 8,   1, 4, 6]`
+
+1. **Paso 1 — Encontrar los Tramos (*Runs*):**  
+   Caminas por la lista de izquierda a derecha. Mientras el siguiente número sea mayor o igual al actual, lo dejas en el mismo grupo:
+   * Empiezas con `[3, 7, 9]`. El siguiente es `2` (¡se rompió el orden!). Haces un corte con tijeras ✂️.
+   * El segundo grupo es `[2, 8]`. El siguiente es `1` (¡se rompió el orden!). Otro corte ✂️.
+   * El tercer grupo es `[1, 4, 6]`.
+   
+   Resultado de la Fase 1: te quedan 3 tramos ordenados:  
+   `Tramo A: [3, 7, 9]` | `Tramo B: [2, 8]` | `Tramo C: [1, 4, 6]`
+
+2. **Paso 2 — Fusión de 2 Vías (*Merge*):**  
+   Tomas parejas de tramos (ej. Tramo A y Tramo B) y los unes como si formaras una fila por estaturas:
+   * Miras el frente de A (`3`) y el frente de B (`2`). ¿Quién es menor? El `2`. Lo mandas a la salida.
+   * Ahora comparas `3` con `8`. ¿Quién es menor? El `3`. Lo mandas a la salida.
+   * Ahora comparas `7` con `8`. Sale el `7`.
+   * Ahora comparas `9` con `8`. Sale el `8`.
+   * Finalmente sale el `9`.
+   
+   Resultado: `[2, 3, 7, 8, 9]`. ¡Ese nuevo tramo gigante ya está perfectamente ordenado!
+3. **Paso 3 — Repetir:**  
+   Se repite uniendo este resultado con el `Tramo C` hasta que **solo quede un único tramo final** con todos los elementos ordenados.
+
+#### ¿Por qué es rápido?
+Si la lista ya venía casi ordenada, solo detectará 1 o 2 tramos y terminará en una sola pasada ($\mathcal{O}(N)$), ahorrándole a la computadora horas de lectura y escritura en disco.
 
 ---
 
 ### 2. Escaneo Secuencial por Bloques (*Sequential Block Scan*)
-* **Responsable:** Dylan Osvaldo García Rayón
-* **Propósito:** Modelar fielmente el funcionamiento de los controladores de disco y sistemas de archivos reales. Los dispositivos de almacenamiento secundario no transfieren bytes o registros aislados; transfieren **bloques físicos** (páginas de 512 B o 4 KB) hacia un búfer en memoria RAM (*Buffer Pool*).
-* **Mecánica Paso a Paso:**
-  1. **Lectura Física por Lotes:** Lee registros estructurados desde el archivo real [`datos/empleados.dat`](datos/empleados.dat) en bloques de $B$ registros por operación de E/S ($I/O$).
-  2. **Búsqueda en Búfer de RAM:** Con el bloque cargado en memoria principal, la CPU examina secuencialmente cada registro buscando la coincidencia con la clave solicitada a velocidad de memoria electrónica.
-  3. **Telemetría y Rendimiento:** Se calcula en tiempo real el ahorro de operaciones de disco comparando el costo de leer bloque por bloque vs. la lectura ingenua registro por registro:
-     $$\text{Ahorro de E/S} = 1 - \frac{\text{Lecturas físicas con Bloques}}{\text{Lecturas requeridas sin Bloques}}$$
-* **Complejidad de E/S:**
-  - Costo de transferencia: $\mathcal{O}(\lceil N / B \rceil)$ lecturas de disco, reduciendo los accesos a disco por un factor proporcional al tamaño del bloque $B$.
+* **Responsable:** Dylan Osvaldo García Rayón  
+* **Concepto Clave:** *No viajes al disco duro por cada cosita; viaja en caja (Buffer).*
+
+#### ¿Qué problema resuelve?
+El procesador y la memoria RAM son millones de veces más veloces que un disco duro o SSD.  
+Hacer una llamada al disco para leer **1 solo registro** toma mucho tiempo. Si un archivo tiene 1,000 registros y haces 1,000 llamadas al disco, el sistema se satura por culpa del cuello de botella de Entrada/Salida (E/S).
+
+#### La Analogía de las Bolsas del Súper 📦:
+Imagina que compraste 20 botellas de refresco y están en la cajuela de tu coche (el **disco duro**):
+* **Método Ingenuo (registro por registro):**
+  Vas al coche, agarras 1 botella, caminas hasta la cocina (la **RAM**), la revisas. No es la que buscas. Vuelves a caminar a la cajuela por la segunda... ¡Tuviste que dar **20 viajes caminando**!
+* **Método por Bloques ($B = 4$):**
+  Llevas una **caja** a la cajuela y metes 4 botellas juntas. En **1 solo viaje**, trajiste 4 botellas a la cocina. En la mesa de la cocina revisas las 4 en 2 segundos. Solo hiciste **5 viajes al coche**.
+
+#### Cómo funciona en nuestro código:
+1. El programa abre el archivo físico [`datos/empleados.dat`](datos/empleados.dat).
+2. Lee un bloque completo de $B$ empleados a la vez (por ejemplo 3 o 4 líneas) y lo guarda temporalmente en un **Buffer en RAM**.
+3. Busca en memoria si el empleado que buscas está dentro de ese bloque.
+4. Si no está, pide el siguiente bloque al disco.
+5. **Métrica de Ahorro:** Calculamos el porcentaje de viajes ahorrados al disco:
+   $$\text{Ahorro de E/S} = 1 - \frac{\text{Viajes reales con bloques}}{\text{Viajes que hubiéramos hecho sin bloques}}$$
+   Si teníamos 8 empleados y usamos bloques de 4, pasamos de 8 lecturas a solo 2 lecturas físicas: **¡75% de ahorro de E/S!**
 
 ---
 
-### 3. Puntero de Archivo (`seek`, `read`, `tell`)
-* **Responsable:** Mauro Alexis Robles de la Rosa
-* **Propósito:** Comprender y visualizar el acceso directo y aleatorio a nivel de byte dentro de un archivo binario o de texto ([`datos/archivo_secuencial.txt`](datos/archivo_secuencial.txt)). Esta capacidad es el fundamento de los índices externos (árboles B+, hashing extensible) y archivos de acceso aleatorio.
-* **Mecánica y Operaciones POSIX:**
-  1. **`tell()`:** Informa la posición absoluta actual del cursor de lectura/escritura (en bytes desde el inicio).
-  2. **`seek(offset, whence)`:** Reposiciona el cursor dentro del descriptor del archivo según los 3 modos estándar del sistema operativo:
-     - `whence = 0` (`SEEK_SET`): Posición absoluta referenciada al byte 0 (inicio del archivo).
-     - `whence = 1` (`SEEK_CUR`): Desplazamiento relativo respecto a la posición actual del cursor.
-     - `whence = 2` (`SEEK_END`): Desplazamiento relativo respecto al final del archivo.
-  3. **`read(n_bytes)`:** Lee un flujo contiguo de $n$ bytes a partir de la posición actual del puntero y avanza el cursor automáticamente en $n$ posiciones.
-* **Protección de Límites (*Clamping Guard*):** Valida que las operaciones no intenten posicionar el cursor antes del byte 0 ni excedan el tamaño físico del archivo, emulando la robustez de un sistema de archivos real.
+### 3. Puntero de Archivo: `seek`, `read`, `tell`
+* **Responsable:** Mauro Alexis Robles de la Rosa  
+* **Concepto Clave:** *Mover tu dedo sobre un libro sin tener que leerlo todo.*
+
+#### ¿Qué problema resuelve?
+Cuando abres un archivo de texto o binario (como [`datos/archivo_secuencial.txt`](datos/archivo_secuencial.txt)), la computadora tiene una aguja o cursor imaginario que apunta a un byte específico.  
+Si tienes un archivo de 2 millones de caracteres y necesitas leer el carácter número 1,500,000, sería absurdo leer los primeros 1,499,999 caracteres uno por uno. Lo que quieres es **saltar directamente ahí**.
+
+#### La Analogía del Libro con el Dedo Índice 👆:
+Imagina una línea de texto guardada en el disco:  
+`[E, D, A,  , I, I,  , 2, 0, 2, 6]`  
+Cada letra tiene un número de byte (la posición 0, 1, 2, 3...).
+
+Las 3 funciones básicas son:
+1. **`tell()` — ¿En qué letra tengo el dedo puesto ahorita?**  
+   Simplemente te dice la posición actual del cursor.  
+   *Ejemplo:* Si el cursor está sobre la `I`, `tell()` devuelve `4`.
+2. **`read(n)` — Lee $n$ letras y avanza el dedo:**  
+   Lee las siguientes $n$ letras a partir de donde estés y mueve tu dedo $n$ posiciones hacia adelante.
+3. **`seek(offset, whence)` — Teletransporta el dedo:**  
+   Mueve el cursor a donde le digas, usando 3 modos (`whence`):
+   * **Modo 0 (`SEEK_SET`): Desde el inicio del archivo.**  
+     `seek(5, 0)` pone el cursor exactamente en el byte 5 desde el principio.
+   * **Modo 1 (`SEEK_CUR`): Desde donde estás ahorita.**  
+     Si estabas en el byte 4 y ejecutas `seek(3, 1)`, el cursor se mueve 3 lugares hacia adelante (queda en el byte 7). Si pones un número negativo, retrocede.
+   * **Modo 2 (`SEEK_END`): Desde el final del archivo.**  
+     `seek(-4, 2)` coloca el cursor 4 bytes antes de que termine el archivo (útil para leer el final sin saber cuánto mide el archivo).
+
+#### Seguridad implementada (*Clamping Guard*):
+Si intentas hacer un `seek(-50)` hacia atrás del inicio o un `seek(9999)` más allá del final del archivo, el algoritmo detecta el error y frena el puntero en los límites legales (byte `0` o fin de archivo), evitando que el programa truene.
+
+---
+
+### Resumen para el Examen / Preguntas del Profesor
+
+| Pregunta del Profesor | Respuesta Clave |
+| :--- | :--- |
+| **¿Por qué Mezcla Natural y no Mezcla Directa?** | Porque la Mezcla Natural detecta tramos que ya vienen ordenados (*runs*). En el mejor caso cuesta $\mathcal{O}(N)$, mientras que la directa siempre parte rígidamente y cuesta $\mathcal{O}(N \log N)$. |
+| **¿Por qué leer por bloques en Escaneo Secuencial?** | Porque los discos leen por páginas físicas. Agrupar registros en un *Buffer* de RAM reduce drásticamente las operaciones lentas de E/S ($\lceil N/B \rceil$). |
+| **¿Qué diferencia hay entre `seek(0, 0)` y `seek(0, 2)`?** | `seek(0, 0)` rebobina el archivo al primer byte (inicio), mientras que `seek(0, 2)` va al último byte (final). |
