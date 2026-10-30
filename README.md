@@ -1,8 +1,8 @@
 # Laboratorio Visual EDA II — Capítulo 6: Archivos y Almacenamiento Externo
 
-Plataforma interactiva de visualización de algoritmos de almacenamiento externo desarrollada desde cero en Python para la materia de **Estructuras de Datos y Algoritmos II** (Facultad de Ingeniería, UNAM).
+Plataforma interactiva de visualización de algoritmos de almacenamiento externo desarrollada desde cero en **React 18 + TypeScript + Vite** para la materia de **Estructuras de Datos y Algoritmos II** (Facultad de Ingeniería, UNAM).
 
-> **Regla de Oro:** Implementación pura desde cero, sin utilizar funciones nativas de ordenamiento ni bibliotecas automáticas (`sorted()`, `list.sort()`, `heapq`, `bisect`, `csv.reader`).
+> **Regla de Oro:** Implementación pura desde cero en TypeScript, sin utilizar funciones nativas de ordenamiento (`Array.prototype.sort()`) ni bibliotecas externas de ordenamiento o parseo CSV.
 
 ---
 
@@ -13,22 +13,32 @@ Plataforma interactiva de visualización de algoritmos de almacenamiento externo
 
 ---
 
-## Cómo Ejecutar
+## Cómo Ejecutar (React + TypeScript)
 
 Desde la terminal en la carpeta del proyecto:
 
 ```powershell
-py -3 app.py
+npm install
+npm run dev
 ```
 
-*(Si no tienes `Flask` instalado, el script lo detecta, lo instala automáticamente y abre el navegador en `http://127.0.0.1:5000`).*
+*(Vite compilará el proyecto en TypeScript y abrirá automáticamente el navegador en `http://127.0.0.1:5173`).*
+
+Para compilar la versión de producción y verificar tipos:
+```powershell
+npm run build
+```
 
 ---
 
 ## Estructura del Proyecto
-- `app.py`: Servidor Flask y motor de ejecución paso a paso en Python puro.
-- `templates/index.html`: Interfaz web interactiva con panel de control, gráficos SVG y telemetría en tiempo real.
-- `datos/`: Archivos físicos sobre los que se ejecutan las llamadas reales de lectura/escritura (`empleados.dat` y `archivo_secuencial.txt`).
+- `src/algorithms/`: Implementación pura en TypeScript desde cero de cada algoritmo:
+  - [`mezclaNatural.ts`](src/algorithms/mezclaNatural.ts): Detección lineal de corridas naturales + fusión iterativa de 2 vías con dos punteros.
+  - [`escaneoSecuencial.ts`](src/algorithms/escaneoSecuencial.ts): Parseo carácter por carácter y lectura por bloques físicos ($B$) hacia el *Buffer Pool* en RAM.
+  - [`punteroSeekTell.ts`](src/algorithms/punteroSeekTell.ts): Emulador de descriptor binario de archivo (`Uint8Array`) con llamadas `seek(offset, whence)`, `read(n)` y `tell()`.
+- `src/components/`: Componentes visuales en React (`MezclaView.tsx`, `EscaneoView.tsx`, `SeekView.tsx`, `Sidebar.tsx`).
+- `src/types/algorithms.ts`: Interfaces y tipos estrictos de TypeScript para los estados y telemetría.
+- `public/datos/`: Archivos físicos (`empleados.dat` y `archivo_secuencial.txt`) consumidos por la aplicación.
 - `apuntes_cap_6_archivos.md`: Notas teóricas del Capítulo 6.
 - `asignaci_n_de_algoritmos.md`: Asignación de temas y roles del equipo.
 
@@ -41,7 +51,7 @@ Esta sección está pensada para que cualquier estudiante pueda entender qué ha
 ---
 
 ### 1. Mezcla Natural (*Natural Merge Sort*)
-* **Responsable:** Diego Córdova García  
+* **Responsable:** Diego Córdova García (`src/algorithms/mezclaNatural.ts`)
 * **Concepto Clave:** *Aprovechar el orden que ya existe por suerte.*
 
 #### ¿Qué problema resuelve?
@@ -80,7 +90,7 @@ Si la lista ya venía casi ordenada, solo detectará 1 o 2 tramos y terminará e
 ---
 
 ### 2. Escaneo Secuencial por Bloques (*Sequential Block Scan*)
-* **Responsable:** Dylan Osvaldo García Rayón  
+* **Responsable:** Dylan Osvaldo García Rayón (`src/algorithms/escaneoSecuencial.ts`)
 * **Concepto Clave:** *No viajes al disco duro por cada cosita; viaja en caja (Buffer).*
 
 #### ¿Qué problema resuelve?
@@ -95,22 +105,21 @@ Imagina que compraste 20 botellas de refresco y están en la cajuela de tu coche
   Llevas una **caja** a la cajuela y metes 4 botellas juntas. En **1 solo viaje**, trajiste 4 botellas a la cocina. En la mesa de la cocina revisas las 4 en 2 segundos. Solo hiciste **5 viajes al coche**.
 
 #### Cómo funciona en nuestro código:
-1. El programa abre el archivo físico [`datos/empleados.dat`](datos/empleados.dat).
-2. Lee un bloque completo de $B$ empleados a la vez (por ejemplo 3 o 4 líneas) y lo guarda temporalmente en un **Buffer en RAM**.
+1. El programa lee el archivo [`public/datos/empleados.dat`](public/datos/empleados.dat).
+2. Transfiere un bloque completo de $B$ empleados a la vez (por ejemplo 2 o 4 registros) y lo guarda temporalmente en un **Buffer en RAM**.
 3. Busca en memoria si el empleado que buscas está dentro de ese bloque.
 4. Si no está, pide el siguiente bloque al disco.
-5. **Métrica de Ahorro:** Calculamos el porcentaje de viajes ahorrados al disco:
-   $$\text{Ahorro de E/S} = 1 - \frac{\text{Viajes reales con bloques}}{\text{Viajes que hubiéramos hecho sin bloques}}$$
-   Si teníamos 8 empleados y usamos bloques de 4, pasamos de 8 lecturas a solo 2 lecturas físicas: **¡75% de ahorro de E/S!**
+5. **Métrica de Ahorro:** Calculamos el factor de ahorro de viajes al disco:
+   $$\text{Ratio de Ahorro E/S} = \frac{\text{Inspecciones en RAM}}{\text{Transferencias Físicas de Bloque}}$$
 
 ---
 
 ### 3. Puntero de Archivo: `seek`, `read`, `tell`
-* **Responsable:** Mauro Alexis Robles de la Rosa  
+* **Responsable:** Mauro Alexis Robles de la Rosa (`src/algorithms/punteroSeekTell.ts`)
 * **Concepto Clave:** *Mover tu dedo sobre un libro sin tener que leerlo todo.*
 
 #### ¿Qué problema resuelve?
-Cuando abres un archivo de texto o binario (como [`datos/archivo_secuencial.txt`](datos/archivo_secuencial.txt)), la computadora tiene una aguja o cursor imaginario que apunta a un byte específico.  
+Cuando abres un archivo de texto o binario (como [`public/datos/archivo_secuencial.txt`](public/datos/archivo_secuencial.txt)), la computadora tiene una aguja o cursor imaginario que apunta a un byte específico.  
 Si tienes un archivo de 2 millones de caracteres y necesitas leer el carácter número 1,500,000, sería absurdo leer los primeros 1,499,999 caracteres uno por uno. Lo que quieres es **saltar directamente ahí**.
 
 #### La Analogía del Libro con el Dedo Índice 👆:
@@ -120,8 +129,7 @@ Cada letra tiene un número de byte (la posición 0, 1, 2, 3...).
 
 Las 3 funciones básicas son:
 1. **`tell()` — ¿En qué letra tengo el dedo puesto ahorita?**  
-   Simplemente te dice la posición actual del cursor.  
-   *Ejemplo:* Si el cursor está sobre la `I`, `tell()` devuelve `4`.
+   Simplemente te dice la posición actual del cursor (`f_pos`).
 2. **`read(n)` — Lee $n$ letras y avanza el dedo:**  
    Lee las siguientes $n$ letras a partir de donde estés y mueve tu dedo $n$ posiciones hacia adelante.
 3. **`seek(offset, whence)` — Teletransporta el dedo:**  
@@ -134,7 +142,7 @@ Las 3 funciones básicas son:
      `seek(-4, 2)` coloca el cursor 4 bytes antes de que termine el archivo (útil para leer el final sin saber cuánto mide el archivo).
 
 #### Seguridad implementada (*Clamping Guard*):
-Si intentas hacer un `seek(-50)` hacia atrás del inicio o un `seek(9999)` más allá del final del archivo, el algoritmo detecta el error y frena el puntero en los límites legales (byte `0` o fin de archivo), evitando que el programa truene.
+Si intentas hacer un `seek(-50)` hacia atrás del inicio o un `seek(9999)` más allá del final del archivo, el descriptor en TypeScript frena el puntero en los límites legales (byte `0` o `EOF`), evitando desbordamientos de memoria.
 
 ---
 

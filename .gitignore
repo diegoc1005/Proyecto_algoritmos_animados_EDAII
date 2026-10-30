@@ -1,3 +1,6 @@
+node_modules/
+dist/
+*.tsbuildinfo
 __pycache__/
 *.pyc
 .venv/
@@ -6,9 +9,9 @@ venv/
 *.mp4
 *.zip
 
-# Archivos locales auxiliares y notas
+# Archivos locales auxiliares y scripts antiguos en Python
 *.bat
+*.py
+templates/
+requirements.txt
 prompt_para_antigravity.md
-mezcla_natural.py
-escaneo_secuencial.py
-puntero_seek_tell.py

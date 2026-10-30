@@ -1,0 +1,3 @@
+Hola mundo desde archivo secuencial.
+Segunda linea de datos.
+Tercera linea final.
