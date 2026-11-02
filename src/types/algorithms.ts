@@ -1,4 +1,4 @@
-export type ModuleId = 'mezcla' | 'escaneo' | 'seek';
+export type ModuleId = 'mezcla' | 'escaneo' |'indice'| 'seek';
 
 // =========================================================================
 // 1. TIPOS PARA MEZCLA NATURAL (DIEGO CÓRDOVA)
@@ -28,7 +28,7 @@ export interface StepMezcla {
 }
 
 // =========================================================================
-// 2. TIPOS PARA ESCANEO SECUENCIAL POR BLOQUES (DYLAN GARCÍA)
+// 2. TIPOS PARA ESCANEO SECUENCIAL E ÍNDICE DENSO (DYLAN GARCÍA)
 // =========================================================================
 export interface RegistroEmpleado {
   offset: number;
@@ -56,6 +56,32 @@ export interface StepEscaneo {
   comparaciones_cpu: number;
   ahorro_real_x: number;
   tiempo_ms: number;
+  explicacion: string;
+}
+
+export interface EntradaIndiceDenso {
+  clave: string;
+  offset: number;
+}
+
+export type EstadoIndiceDenso = 
+  | 'INICIO' 
+  | 'CONSTRUYENDO_INDICE' 
+  | 'ORDENANDO_INDICE' 
+  | 'BUSCANDO_BINARIA' 
+  | 'ENCONTRADO' 
+  | 'NO_ENCONTRADO';
+
+export interface StepIndiceDenso {
+  paso: number;
+  estado: EstadoIndiceDenso;
+  tabla_indice: EntradaIndiceDenso[];
+  bajo: number;
+  alto: number;
+  medio: number;
+  accesos_io: number;
+  comparaciones_cpu: number;
+  registro_encontrado: RegistroEmpleado | null;
   explicacion: string;
 }
 

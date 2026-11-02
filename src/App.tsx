@@ -9,6 +9,8 @@ import {
   TEXTO_ARCHIVO_SECUENCIAL_DEFAULT,
   generarPasosSeekTell
 } from './algorithms/punteroSeekTell';
+import { generarPasosIndiceDenso } from './algorithms/indiceDenso';
+import { IndiceDensoView } from './components/IndiceDensoView';
 import { EscaneoView } from './components/EscaneoView';
 import { MezclaView } from './components/MezclaView';
 import { SeekView } from './components/SeekView';
@@ -99,6 +101,11 @@ export const App: React.FC = () => {
     [cfgClave, cfgFactorB, archivoEmpleadosRaw]
   );
 
+  const indiceResult = useMemo(
+    () => generarPasosIndiceDenso(cfgClave, archivoEmpleadosRaw),
+    [cfgClave, archivoEmpleadosRaw]
+  );
+
   const seekResult = useMemo(
     () => generarPasosSeekTell(cfgSeekOps, archivoSecuencialRaw),
     [cfgSeekOps, archivoSecuencialRaw]
@@ -109,7 +116,9 @@ export const App: React.FC = () => {
       ? mezclaSteps.length
       : currentModule === 'escaneo'
         ? escaneoResult.pasos.length
-        : seekResult.pasos.length;
+        : currentModule === 'indice'
+          ? indiceResult.pasos.length
+          : seekResult.pasos.length;
 
   const safeStepIdx = Math.min(stepIdx, Math.max(0, totalSteps - 1));
 
@@ -253,14 +262,18 @@ export const App: React.FC = () => {
       ? mezclaSteps[safeStepIdx].estado
       : currentModule === 'escaneo'
         ? escaneoResult.pasos[safeStepIdx].estado
-        : seekResult.pasos[safeStepIdx].tipo;
+        : currentModule === 'indice'
+          ? indiceResult.pasos[safeStepIdx].estado
+          : seekResult.pasos[safeStepIdx].tipo;
 
   const currentStepExplanation =
     currentModule === 'mezcla'
       ? mezclaSteps[safeStepIdx].explicacion
       : currentModule === 'escaneo'
         ? escaneoResult.pasos[safeStepIdx].explicacion
-        : seekResult.pasos[safeStepIdx].explicacion;
+        : currentModule === 'indice'
+          ? indiceResult.pasos[safeStepIdx].explicacion
+          : seekResult.pasos[safeStepIdx].explicacion;
 
   const progressPct =
     totalSteps > 1 ? (safeStepIdx / (totalSteps - 1)) * 100 : 100;
@@ -281,6 +294,8 @@ export const App: React.FC = () => {
                 'MÓDULO 01 · DIEGO CÓRDOVA · ORDENAMIENTO EXTERNO'}
               {currentModule === 'escaneo' &&
                 'MÓDULO 04 · DYLAN GARCÍA · ARCHIVOS E INDEXACIÓN'}
+              {currentModule === 'indice' &&
+                'MÓDULO 05 · DYLAN GARCÍA · ÍNDICE DENSO Y BÚSQUEDA BINARIA'}
               {currentModule === 'seek' &&
                 'MÓDULO 07 · MAURO ROBLES · DESCRIPTORES DEL SISTEMA'}
             </div>
@@ -289,6 +304,8 @@ export const App: React.FC = () => {
                 'Mezcla Natural: Detección y Fusión de Corridas'}
               {currentModule === 'escaneo' &&
                 'Escaneo Secuencial por Bloques (Factor B)'}
+              {currentModule === 'indice' &&
+                'Índice Denso en RAM con Búsqueda Binaria O(log N)'}
               {currentModule === 'seek' &&
                 'Puntero de Archivo: Llamadas read(), seek() y tell()'}
             </h1>
@@ -297,6 +314,8 @@ export const App: React.FC = () => {
                 'Partición de una cinta de entrada en subsecuencias ascendentes mediante detección de rupturas A[i] < A[i-1] y fusión 2-vías.'}
               {currentModule === 'escaneo' &&
                 'Transferencia de páginas desde almacenamiento secundario al Buffer Pool en RAM con costo O(N/B).'}
+              {currentModule === 'indice' &&
+                'Tabla con una entrada por cada registro ordenada en RAM, permitiendo localizar el offset exacto y realizar un único acceso E/S a disco.'}
               {currentModule === 'seek' &&
                 'Ejecución sobre flujo binario en disco con soporte para SEEK_SET (0), SEEK_CUR (1) y SEEK_END (2).'}
             </p>
@@ -331,7 +350,7 @@ export const App: React.FC = () => {
               </>
             )}
 
-            {currentModule === 'escaneo' && (
+            {(currentModule === 'escaneo' || currentModule === 'indice') && (
               <>
                 <span
                   style={{
@@ -358,28 +377,32 @@ export const App: React.FC = () => {
                   ))}
                 </select>
 
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '11px',
-                    color: 'var(--ink-muted)'
-                  }}
-                >
-                  FACTOR B
-                </span>
-                <select
-                  className="field-input"
-                  value={cfgFactorB}
-                  onChange={(e) => {
-                    setIsPlaying(false);
-                    setCfgFactorB(parseInt(e.target.value, 10));
-                    setStepIdx(0);
-                  }}
-                >
-                  <option value={1}>B = 1 reg/página</option>
-                  <option value={2}>B = 2 regs/página</option>
-                  <option value={4}>B = 4 regs/página</option>
-                </select>
+                {currentModule === 'escaneo' && (
+                  <>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        color: 'var(--ink-muted)'
+                      }}
+                    >
+                      FACTOR B
+                    </span>
+                    <select
+                      className="field-input"
+                      value={cfgFactorB}
+                      onChange={(e) => {
+                        setIsPlaying(false);
+                        setCfgFactorB(parseInt(e.target.value, 10));
+                        setStepIdx(0);
+                      }}
+                    >
+                      <option value={1}>B = 1 reg/página</option>
+                      <option value={2}>B = 2 regs/página</option>
+                      <option value={4}>B = 4 regs/página</option>
+                    </select>
+                  </>
+                )}
               </>
             )}
 
@@ -451,6 +474,14 @@ export const App: React.FC = () => {
             claveBuscada={cfgClave}
             factorB={cfgFactorB}
             step={escaneoResult.pasos[safeStepIdx]}
+          />
+        )}
+
+        {currentModule === 'indice' && (
+          <IndiceDensoView
+            registros={escaneoResult.registros}
+            claveBuscada={cfgClave}
+            step={indiceResult.pasos[safeStepIdx]}
           />
         )}
 

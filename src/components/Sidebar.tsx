@@ -68,7 +68,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <span className="badge-sem">S1</span>
         </button>
-        <button className="nav-item locked" title="Entrega Semana 2">
+        <button
+          className={`nav-item ${currentModule === 'indice' ? 'active' : ''}`}
+          onClick={() => onSelectModule('indice')}
+        >
           <div className="nav-item-left">
             <span className="nav-index">05</span>
             <span>Índice Denso</span>
