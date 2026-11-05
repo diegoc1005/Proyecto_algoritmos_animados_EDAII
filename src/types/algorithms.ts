@@ -1,8 +1,10 @@
-export type ModuleId = 'mezcla' | 'escaneo' |'indice'| 'seek';
+export type ModuleId = 'mezcla' | 'merge2vias' | 'escaneo' | 'indice' | 'seek';
 
 // =========================================================================
-// 1. TIPOS PARA MEZCLA NATURAL (DIEGO CÓRDOVA)
+// 1. TIPOS PARA ORDENAMIENTO EXTERNO (DIEGO CÓRDOVA)
 // =========================================================================
+
+// --- SEMANA 1: MEZCLA NATURAL ---
 export type EstadoMezcla =
   | 'INICIO'
   | 'COMPARANDO'
@@ -24,6 +26,31 @@ export interface StepMezcla {
   corridas: number[][];
   comparaciones: number;
   accesos_io: number;
+  explicacion: string;
+}
+
+// --- SEMANA 2: MERGE SORT 2-VÍAS EXTERNO ---
+export type EstadoMerge2Vias =
+  | 'INICIO'
+  | 'COMPARANDO'
+  | 'EMITIENDO_A'
+  | 'EMITIENDO_B'
+  | 'VACIANDO_RESTANTE_A'
+  | 'VACIANDO_RESTANTE_B'
+  | 'FINALIZADO';
+
+export interface StepMerge2Vias {
+  paso: number;
+  estado: EstadoMerge2Vias;
+  cintaA: number[];
+  cintaB: number[];
+  cintaSalida: number[];
+  punteroA: number; // Índice actual en Cinta A
+  punteroB: number; // Índice actual en Cinta B
+  elementoSeleccionado: { valor: number; origen: 'A' | 'B' } | null;
+  comparaciones: number;
+  accesos_io_lectura: number;
+  accesos_io_escritura: number;
   explicacion: string;
 }
 

@@ -9,7 +9,7 @@ interface IndiceDensoViewProps {
 
 export const IndiceDensoView: React.FC<IndiceDensoViewProps> = ({
   registros,
-  claveBuscada,
+  claveBuscada: _claveBuscada,
   step
 }) => {
   const hit = step.estado === 'ENCONTRADO';

@@ -36,7 +36,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <span className="badge-sem">S1</span>
         </button>
-        <button className="nav-item locked" title="Entrega Semana 2">
+        <button
+          className={`nav-item ${currentModule === 'merge2vias' ? 'active' : ''}`}
+          onClick={() => onSelectModule('merge2vias')}
+        >
           <div className="nav-item-left">
             <span className="nav-index">02</span>
             <span>Merge Sort 2-Vías</span>

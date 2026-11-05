@@ -4,6 +4,7 @@ import {
   generarPasosEscaneoSecuencial
 } from './algorithms/escaneoSecuencial';
 import { generarPasosMezclaNatural } from './algorithms/mezclaNatural';
+import { generarPasosMerge2Vias } from './algorithms/mergeSort2Vias';
 import {
   OPERACIONES_SEEK_DEFAULT,
   TEXTO_ARCHIVO_SECUENCIAL_DEFAULT,
@@ -13,6 +14,7 @@ import { generarPasosIndiceDenso } from './algorithms/indiceDenso';
 import { IndiceDensoView } from './components/IndiceDensoView';
 import { EscaneoView } from './components/EscaneoView';
 import { MezclaView } from './components/MezclaView';
+import { MergeSort2ViasView } from './components/MergeSort2ViasView';
 import { SeekView } from './components/SeekView';
 import { Sidebar } from './components/Sidebar';
 import {
@@ -56,11 +58,17 @@ export const App: React.FC = () => {
     '3, 7, 9, 2, 5, 8, 1, 4, 6'
   );
 
-  // Parámetros Módulo 2: Escaneo Secuencial
+  // Parámetros Módulo 2: Merge Sort 2-Vías (Semana 2 - Diego)
+  const [cfgCintaA, setCfgCintaA] = useState<number[]>([2, 5, 8, 11, 14]);
+  const [cfgCintaB, setCfgCintaB] = useState<number[]>([1, 4, 7, 9, 12, 15]);
+  const [inputCintaAText, setInputCintaAText] = useState<string>('2, 5, 8, 11, 14');
+  const [inputCintaBText, setInputCintaBText] = useState<string>('1, 4, 7, 9, 12, 15');
+
+  // Parámetros Módulo 4 y 5: Escaneo Secuencial e Índice Denso (Dylan)
   const [cfgClave, setCfgClave] = useState<string>('Beto');
   const [cfgFactorB, setCfgFactorB] = useState<number>(2);
 
-  // Parámetros Módulo 3: Seek, Read & Tell
+  // Parámetros Módulo 7: Seek, Read & Tell (Mauro)
   const [cfgSeekOps, setCfgSeekOps] = useState<OperacionSeek[]>(
     OPERACIONES_SEEK_DEFAULT
   );
@@ -90,6 +98,11 @@ export const App: React.FC = () => {
     [cfgMezcla]
   );
 
+  const merge2ViasSteps = useMemo(
+    () => generarPasosMerge2Vias(cfgCintaA, cfgCintaB, 2),
+    [cfgCintaA, cfgCintaB]
+  );
+
   const escaneoResult = useMemo(
     () =>
       generarPasosEscaneoSecuencial(
@@ -114,11 +127,13 @@ export const App: React.FC = () => {
   const totalSteps =
     currentModule === 'mezcla'
       ? mezclaSteps.length
-      : currentModule === 'escaneo'
-        ? escaneoResult.pasos.length
-        : currentModule === 'indice'
-          ? indiceResult.pasos.length
-          : seekResult.pasos.length;
+      : currentModule === 'merge2vias'
+        ? merge2ViasSteps.length
+        : currentModule === 'escaneo'
+          ? escaneoResult.pasos.length
+          : currentModule === 'indice'
+            ? indiceResult.pasos.length
+            : seekResult.pasos.length;
 
   const safeStepIdx = Math.min(stepIdx, Math.max(0, totalSteps - 1));
 
@@ -202,7 +217,7 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [nextStep, prevStep, togglePlay, resetSim]);
 
-  // Handlers de parámetros de algoritmos
+  // Handlers de parámetros Módulo 1 (Mezcla Natural)
   const handleUpdateMezclaArr = () => {
     const parsed = inputMezclaText
       .split(',')
@@ -228,6 +243,59 @@ export const App: React.FC = () => {
     setStepIdx(0);
   };
 
+  // Handlers de parámetros Módulo 2 (Merge Sort 2-Vías)
+  const handleUpdateMergeCintas = () => {
+    const parsedA = inputCintaAText
+      .split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !Number.isNaN(n));
+    const parsedB = inputCintaBText
+      .split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !Number.isNaN(n));
+
+    if (parsedA.length >= 1 && parsedB.length >= 1) {
+      setIsPlaying(false);
+      setCfgCintaA(parsedA.slice(0, 8));
+      setCfgCintaB(parsedB.slice(0, 8));
+      setStepIdx(0);
+    }
+  };
+
+  const handleShuffleMergeCintas = () => {
+    const nuevoA: number[] = [];
+    const nuevoB: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      nuevoA.push(Math.floor(Math.random() * 45) + 1);
+    }
+    for (let i = 0; i < 6; i++) {
+      nuevoB.push(Math.floor(Math.random() * 45) + 1);
+    }
+    // Ordenar manualmente para respetar invariante de cintas
+    const sortSimple = (arr: number[]) => {
+      const res = [...arr];
+      for (let i = 1; i < res.length; i++) {
+        const val = res[i];
+        let j = i - 1;
+        while (j >= 0 && res[j] > val) {
+          res[j + 1] = res[j];
+          j--;
+        }
+        res[j + 1] = val;
+      }
+      return res;
+    };
+    const ordA = sortSimple(nuevoA);
+    const ordB = sortSimple(nuevoB);
+    setIsPlaying(false);
+    setCfgCintaA(ordA);
+    setCfgCintaB(ordB);
+    setInputCintaAText(ordA.join(', '));
+    setInputCintaBText(ordB.join(', '));
+    setStepIdx(0);
+  };
+
+  // Handlers Módulo Seek
   const handlePushSyscall = (tipo: TipoSyscall) => {
     setIsPlaying(false);
     const nuevaOp: OperacionSeek = {
@@ -260,20 +328,24 @@ export const App: React.FC = () => {
   const currentStepStateBadge =
     currentModule === 'mezcla'
       ? mezclaSteps[safeStepIdx].estado
-      : currentModule === 'escaneo'
-        ? escaneoResult.pasos[safeStepIdx].estado
-        : currentModule === 'indice'
-          ? indiceResult.pasos[safeStepIdx].estado
-          : seekResult.pasos[safeStepIdx].tipo;
+      : currentModule === 'merge2vias'
+        ? merge2ViasSteps[safeStepIdx].estado
+        : currentModule === 'escaneo'
+          ? escaneoResult.pasos[safeStepIdx].estado
+          : currentModule === 'indice'
+            ? indiceResult.pasos[safeStepIdx].estado
+            : seekResult.pasos[safeStepIdx].tipo;
 
   const currentStepExplanation =
     currentModule === 'mezcla'
       ? mezclaSteps[safeStepIdx].explicacion
-      : currentModule === 'escaneo'
-        ? escaneoResult.pasos[safeStepIdx].explicacion
-        : currentModule === 'indice'
-          ? indiceResult.pasos[safeStepIdx].explicacion
-          : seekResult.pasos[safeStepIdx].explicacion;
+      : currentModule === 'merge2vias'
+        ? merge2ViasSteps[safeStepIdx].explicacion
+        : currentModule === 'escaneo'
+          ? escaneoResult.pasos[safeStepIdx].explicacion
+          : currentModule === 'indice'
+            ? indiceResult.pasos[safeStepIdx].explicacion
+            : seekResult.pasos[safeStepIdx].explicacion;
 
   const progressPct =
     totalSteps > 1 ? (safeStepIdx / (totalSteps - 1)) * 100 : 100;
@@ -292,6 +364,8 @@ export const App: React.FC = () => {
             <div className="top-bar-meta">
               {currentModule === 'mezcla' &&
                 'MÓDULO 01 · DIEGO CÓRDOVA · ORDENAMIENTO EXTERNO'}
+              {currentModule === 'merge2vias' &&
+                'MÓDULO 02 · DIEGO CÓRDOVA · FUSIÓN DE 2 VÍAS (SEMANA 2)'}
               {currentModule === 'escaneo' &&
                 'MÓDULO 04 · DYLAN GARCÍA · ARCHIVOS E INDEXACIÓN'}
               {currentModule === 'indice' &&
@@ -302,6 +376,8 @@ export const App: React.FC = () => {
             <h1 className="top-bar-title">
               {currentModule === 'mezcla' &&
                 'Mezcla Natural: Detección y Fusión de Corridas'}
+              {currentModule === 'merge2vias' &&
+                'Merge Sort Externo: Mezcla de 2 Vías con Cabezales'}
               {currentModule === 'escaneo' &&
                 'Escaneo Secuencial por Bloques (Factor B)'}
               {currentModule === 'indice' &&
@@ -312,6 +388,8 @@ export const App: React.FC = () => {
             <p className="top-bar-subtitle">
               {currentModule === 'mezcla' &&
                 'Partición de una cinta de entrada en subsecuencias ascendentes mediante detección de rupturas A[i] < A[i-1] y fusión 2-vías.'}
+              {currentModule === 'merge2vias' &&
+                'Fusión secuencial de dos cintas/archivos ordenados (F1 y F2) hacia una cinta de salida vacía (F0) mediante dos punteros y vaciado de remanentes.'}
               {currentModule === 'escaneo' &&
                 'Transferencia de páginas desde almacenamiento secundario al Buffer Pool en RAM con costo O(N/B).'}
               {currentModule === 'indice' &&
@@ -337,6 +415,48 @@ export const App: React.FC = () => {
                   className="btn"
                   onClick={handleShuffleMezclaArr}
                   title="Generar secuencia aleatoria"
+                >
+                  <svg className="icon" viewBox="0 0 24 24">
+                    <path d="M16 3h5v5" />
+                    <path d="M4 20 21 3" />
+                    <path d="M21 16v5h-5" />
+                    <path d="m15 15 6 6" />
+                    <path d="M4 4l5 5" />
+                  </svg>
+                  <span>Permutar</span>
+                </button>
+              </>
+            )}
+
+            {currentModule === 'merge2vias' && (
+              <>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--sig-amber)' }}>
+                  CINTA A
+                </span>
+                <input
+                  type="text"
+                  className="field-input"
+                  value={inputCintaAText}
+                  style={{ width: '130px' }}
+                  onChange={(e) => setInputCintaAText(e.target.value)}
+                />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--sig-ice)' }}>
+                  CINTA B
+                </span>
+                <input
+                  type="text"
+                  className="field-input"
+                  value={inputCintaBText}
+                  style={{ width: '130px' }}
+                  onChange={(e) => setInputCintaBText(e.target.value)}
+                />
+                <button className="btn" onClick={handleUpdateMergeCintas}>
+                  Cargar
+                </button>
+                <button
+                  className="btn"
+                  onClick={handleShuffleMergeCintas}
+                  title="Generar nuevas cintas ordenadas aleatorias"
                 >
                   <svg className="icon" viewBox="0 0 24 24">
                     <path d="M16 3h5v5" />
@@ -466,6 +586,10 @@ export const App: React.FC = () => {
         {/* Vistas de cada Algoritmo */}
         {currentModule === 'mezcla' && (
           <MezclaView step={mezclaSteps[safeStepIdx]} />
+        )}
+
+        {currentModule === 'merge2vias' && (
+          <MergeSort2ViasView step={merge2ViasSteps[safeStepIdx]} />
         )}
 
         {currentModule === 'escaneo' && (
