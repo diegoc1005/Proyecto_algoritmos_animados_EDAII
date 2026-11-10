@@ -87,8 +87,79 @@ O(h), donde h es la altura del árbol binario.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{imagenes_leetCodes/LC98.jpeg}
+    \includegraphics[width=0.4\textwidth]{imagenes_leetCodes/LC98.jpeg}
     \caption{LeetCode 98}
+\end{figure}
+
+\section{LeetCode 70}
+Estas subiendo una escalera. Se necesitan n pasos para llegar a la cima. Puedes subir de 1 o 2 escalones por paso. ¿De cuántas maneras distintas puedes llegar a la cima?
+
+\subsection{Resolución con Programación Dinámica}
+El problema plantea calcular de cuántas formas distintas se puede llegar a la cima de una escalera de n escalones, si en cada paso se permite avanzar opcionalmente de 1 o 2 escalones.
+
+Para alcanzar un escalón i arbitrario, el último movimiento debió haber sido de 1 paso (viniendo desde el escalón i-1) o de 2 pasos (viniendo desde el escalón i-2).
+
+La invariante de la programación dinámica establece que el número total de formas distintas para llegar al escalón i (definido como dp[i]) es la suma exacta de las formas de alcanzar los dos escalones previos:
+dp[i] = dp[i-1] + dp[i-2]
+
+El comportamiento refleja exactamente la relación de recurrencia de la serie de Fibonacci, con casos base definidos para el escalón 1 (1 forma) y el escalón 2 (2 formas).
+
+\subsection{Optimización}
+Intentar resolver el problema por Fuerza Bruta mediante una función recursiva directa sin optimización evalúa repetidamente los mismos subproblemas múltiples veces. Esto provoca una explosión combinatoria que degrada el
+rendimiento a un costo exponencial de $O(2^n)$, volviéndose inviable para valores moderados de n.
+
+Resolver el problema mediante Programación dinámica con Memorización (Top-Down) o iterativa (Bottom-Up) al almacenar los resultados de los subproblemas ya calculados, se evita cualquier recálculo redundante, reduciendo
+drásticamente el tiempo de ejecución a O(n).
+
+Aunque una tabla de programación dinámica tradicional requeriría un arreglo auxiliar de tamaño $n$ (O(n) de espacio), el análisis de la recurrencia demuestra que para calcular el estado actual solo se necesitan los dos valores 
+inmediatamente anteriores (dp[i-1] y dp[i-2]). Por lo tanto, el uso de un par de variables escalares permite prescindir por completo del arreglo auxiliar, optimizando la memoria al límite óptimo.
+
+\subsection{Complejidad Temporal}
+O(n), donde n es el número total de escalones. El algoritmo procesa la solución mediante un único bucle iterativo que recorre linealmente desde el tercer escalón hasta n, realizando una cantidad constante de operaciones aritméticas 
+elementales por cada iteración.
+
+\subsection{Complejidad Espacial}
+O(1). Al emplear una técnica de optimización de espacio basada en el almacenamiento exclusivo de las dos últimas variables de estado (descartando arreglos o tablas de tamaño n), el consumo de memoria auxiliar es completamente constante,
+independiente de la magnitud de la entrada.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{imagenes_leetCodes/LC70.jpeg}
+    \caption{LeetCode 1011}
+\end{figure}
+
+\section{Leet Code 210}
+Hay un total de `numCourses` cursos que debes tomar, etiquetados de 0 a `numCourses` - 1. Se da una matriz prerrequisites = [ai ; bi] indica que debes tomar el curso bi si quieres tomar el curso ai. Retorna el orden de cursos que tienes 
+que tomar para acabar todos.
+
+\subsection{Resolución con Atravesamiento de grafos (BFS)}
+El problema consiste en encontrar el orden correcto en el que se deben tomar un conjunto de cursos dados ciertos prerrequisitos (dependencias dirigidas). Esto se modela como un problema de Ordenamiento Topológico en un Grafo Dirigido Acíclico.
+
+Se procesa el grafo calculando inicialmente los grados de entrada de cada vértice (cantidad de dependencias pendientes que tiene cada curso).
+
+La invariante central postula que cualquier nodo con un grado de entrada igual a 0 está libre de prerrequisitos y, por lo tanto, puede ser cursado y agregado a la secuencia de salida de forma inmediata.
+
+Al extraer un nodo de la cola, se simula su completitud decrementando en uno el grado de entrada de todos sus vecinos adyacentes. Si el grado de un vecino llega a 0, se inserta en la cola para su procesamiento en el siguiente nivel. Si al finalizar 
+el algoritmo el número de elementos procesados no coincide con el total de nodos, se determina la existencia de un ciclo, lo cual invalida el ordenamiento.
+
+\subsection{Optimización}
+Intentar probar todas las combinaciones posibles de secuencias de cursos (Fuerza Bruta) generaría una complejidad O(n!), volviéndose completamente intratable para números moderados de materias.
+
+El uso de una cola combinada con el seguimiento de los grados de entrada (BFS) permite recorrer y ordenar el grafo de manera óptima y estrictamente lineal. A diferencia de las aproximaciones recursivas puras, el enfoque iterativo con BFS evita los 
+riesgos de desbordamiento de la pila de llamadas en grafos profundos. Permite validar de manera simultánea la existencia de ciclos en el grafo sin requerir algoritmos de detección adicionales complejos.
+
+\subsection{Complejidad Temporal}
+O(V + E), donde V es el número de vértices (cursos) y E es el número de aristas (prerrequisitos). El cálculo inicial de los grados de entrada y la construcción de la lista de adyacencia recorren todas las aristas y vértices una vez. Posteriormente, cada
+vértice entra y sale de la cola BFS exactamente una vez, y cada arista se recorre una sola vez cuando se actualizan los grados de los vecinos.
+
+\subsection{Complejidad Espacial}
+O(V + E). Se requiere memoria auxiliar para almacenar la estructura del grafo (lista de adyacencia de tamaño V + E), el arreglo unidimensional para los grados de entrada de tamaño V, la cola de procesamiento BFS y el arreglo de resultados finales, los cuales 
+escalan de forma lineal respecto a las dimensiones de la entrada.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{imagenes_leetCodes/LC210.jpeg}
+    \caption{LeetCode 1011}
 \end{figure}
 
 \end{document}
