@@ -1,4 +1,4 @@
-export type ModuleId = 'mezcla' | 'merge2vias' | 'escaneo' | 'indice' | 'seek';
+export type ModuleId = 'mezcla' | 'merge2vias' | 'escaneo' | 'indice' | 'seek'| 'csv';
 
 // =========================================================================
 // 1. TIPOS PARA ORDENAMIENTO EXTERNO (DIEGO CÓRDOVA)
@@ -55,7 +55,7 @@ export interface StepMerge2Vias {
 }
 
 // =========================================================================
-// 2. TIPOS PARA ESCANEO SECUENCIAL E ÍNDICE DENSO (DYLAN GARCÍA)
+// 2. TIPOS PARA ESCANEO SECUENCIAL, ÍNDICE DENSO Y PARSEO MANUAL DE CSV (DYLAN GARCÍA)
 // =========================================================================
 export interface RegistroEmpleado {
   offset: number;
@@ -110,6 +110,23 @@ export interface StepIndiceDenso {
   comparaciones_cpu: number;
   registro_encontrado: RegistroEmpleado | null;
   explicacion: string;
+}
+
+export type EstadoParseoCSV =
+  | 'FUERA_CAMPO'
+  | 'EN_CAMPO_NORMAL'
+  | 'EN_CAMPO_COMILLAS'
+  | 'ESPERANDO_FIN_COMILLA';
+
+export interface PasoParseoCSV {
+  pasoIdx: number;
+  charActual: string;
+  indiceChar: number;
+  estadoMaquina: EstadoParseoCSV;
+  campoActual: string;
+  filaActual: string[];
+  filasResultantes: string[][];
+  descripcion: string;
 }
 
 // =========================================================================

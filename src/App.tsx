@@ -17,6 +17,8 @@ import { MezclaView } from './components/MezclaView';
 import { MergeSort2ViasView } from './components/MergeSort2ViasView';
 import { SeekView } from './components/SeekView';
 import { Sidebar } from './components/Sidebar';
+import { generarPasosParseoCSV } from './algorithms/parseoCSV';
+import { ParseoCSVView } from './components/ParseoCSVView';
 import {
   ModuleId,
   OperacionSeek,
@@ -67,6 +69,14 @@ export const App: React.FC = () => {
   // Parámetros Módulo 4 y 5: Escaneo Secuencial e Índice Denso (Dylan)
   const [cfgClave, setCfgClave] = useState<string>('Beto');
   const [cfgFactorB, setCfgFactorB] = useState<number>(2);
+
+  // Parámetros Módulo 6: Parseo Manual de CSV (Dylan)
+  const [csvInputText, setCsvInputText] = useState<string>(
+    `ID,Nombre,Departamento,Salario
+  101,"García Rayon, Dylan",Ingeniería,45000
+  102,"Córdova García, Diego",Sistemas,48000
+  103,"Robles de la Rosa, Mauro",Infraestructura,47000`
+  );
 
   // Parámetros Módulo 7: Seek, Read & Tell (Mauro)
   const [cfgSeekOps, setCfgSeekOps] = useState<OperacionSeek[]>(
@@ -119,6 +129,11 @@ export const App: React.FC = () => {
     [cfgClave, archivoEmpleadosRaw]
   );
 
+  const csvResult = useMemo(
+    () => generarPasosParseoCSV(csvInputText),
+    [csvInputText]
+  );
+
   const seekResult = useMemo(
     () => generarPasosSeekTell(cfgSeekOps, archivoSecuencialRaw),
     [cfgSeekOps, archivoSecuencialRaw]
@@ -133,7 +148,9 @@ export const App: React.FC = () => {
           ? escaneoResult.pasos.length
           : currentModule === 'indice'
             ? indiceResult.pasos.length
-            : seekResult.pasos.length;
+            : currentModule === 'csv'
+              ? csvResult.pasos.length
+              : seekResult.pasos.length;
 
   const safeStepIdx = Math.min(stepIdx, Math.max(0, totalSteps - 1));
 
@@ -334,7 +351,9 @@ export const App: React.FC = () => {
           ? escaneoResult.pasos[safeStepIdx].estado
           : currentModule === 'indice'
             ? indiceResult.pasos[safeStepIdx].estado
-            : seekResult.pasos[safeStepIdx].tipo;
+            : currentModule === 'csv'
+              ? csvResult.pasos[safeStepIdx].estadoMaquina
+              : seekResult.pasos[safeStepIdx].tipo;
 
   const currentStepExplanation =
     currentModule === 'mezcla'
@@ -345,7 +364,9 @@ export const App: React.FC = () => {
           ? escaneoResult.pasos[safeStepIdx].explicacion
           : currentModule === 'indice'
             ? indiceResult.pasos[safeStepIdx].explicacion
-            : seekResult.pasos[safeStepIdx].explicacion;
+            : currentModule === 'csv'
+              ? csvResult.pasos[safeStepIdx].descripcion
+              : seekResult.pasos[safeStepIdx].explicacion;
 
   const progressPct =
     totalSteps > 1 ? (safeStepIdx / (totalSteps - 1)) * 100 : 100;
@@ -370,6 +391,8 @@ export const App: React.FC = () => {
                 'MÓDULO 04 · DYLAN GARCÍA · ARCHIVOS E INDEXACIÓN'}
               {currentModule === 'indice' &&
                 'MÓDULO 05 · DYLAN GARCÍA · ÍNDICE DENSO Y BÚSQUEDA BINARIA'}
+              {currentModule === 'csv' &&
+                'MÓDULO 06 · DYLAN GARCÍA · PARSEO MANUAL DE CSV Y MÁQUINA DE ESTADOS'}
               {currentModule === 'seek' &&
                 'MÓDULO 07 · MAURO ROBLES · DESCRIPTORES DEL SISTEMA'}
             </div>
@@ -382,6 +405,8 @@ export const App: React.FC = () => {
                 'Escaneo Secuencial por Bloques (Factor B)'}
               {currentModule === 'indice' &&
                 'Índice Denso en RAM con Búsqueda Binaria O(log N)'}
+              {currentModule === 'csv' &&
+                'Parseo Manual de CSV por Carácter (Máquina de Estados)'}
               {currentModule === 'seek' &&
                 'Puntero de Archivo: Llamadas read(), seek() y tell()'}
             </h1>
@@ -394,6 +419,8 @@ export const App: React.FC = () => {
                 'Transferencia de páginas desde almacenamiento secundario al Buffer Pool en RAM con costo O(N/B).'}
               {currentModule === 'indice' &&
                 'Tabla con una entrada por cada registro ordenada en RAM, permitiendo localizar el offset exacto y realizar un único acceso E/S a disco.'}
+              {currentModule === 'csv' &&
+                'Análisis léxico carácter por carácter con soporte para campos entrecomillados y comas internas sin usar split().'}
               {currentModule === 'seek' &&
                 'Ejecución sobre flujo binario en disco con soporte para SEEK_SET (0), SEEK_CUR (1) y SEEK_END (2).'}
             </p>
@@ -580,6 +607,25 @@ export const App: React.FC = () => {
                 </button>
               </>
             )}
+
+            {currentModule === 'csv' && (
+              <>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--ink-muted)' }}>
+                  CSV CRUDO
+                </span>
+                <input
+                  type="text"
+                  className="field-input"
+                  value={csvInputText}
+                  style={{ width: '220px' }}
+                  onChange={(e) => {
+                    setIsPlaying(false);
+                    setCsvInputText(e.target.value);
+                    setStepIdx(0);
+                  }}
+                />
+              </>
+            )}
           </div>
         </header>
 
@@ -606,6 +652,14 @@ export const App: React.FC = () => {
             registros={escaneoResult.registros}
             claveBuscada={cfgClave}
             step={indiceResult.pasos[safeStepIdx]}
+          />
+        )}
+
+        {currentModule === 'csv' && (
+          <ParseoCSVView
+            stepIdx={safeStepIdx}
+            totalSteps={totalSteps}
+            csvInputText={csvInputText}
           />
         )}
 
