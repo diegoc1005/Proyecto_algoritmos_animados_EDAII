@@ -14,8 +14,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="sidebar">
       <div className="brand-header">
         <div className="brand-title">
-          <span className="brand-mark" />
-          <span>EDA II · I/O LAB</span>
+          <img
+            src="/logo_fac_inge.png"
+            alt="Facultad de Ingeniería UNAM"
+            className="brand-logo"
+          />
+          <span>EDA II</span>
         </div>
         <span className="brand-meta">UNAM · FI</span>
       </div>
@@ -29,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           className={`nav-item ${currentModule === 'mezcla' ? 'active' : ''}`}
           onClick={() => onSelectModule('mezcla')}
+          title="Mezcla Natural (Natural Merge Sort)"
         >
           <div className="nav-item-left">
             <span className="nav-index">01</span>
@@ -39,17 +44,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           className={`nav-item ${currentModule === 'merge2vias' ? 'active' : ''}`}
           onClick={() => onSelectModule('merge2vias')}
+          title="Merge Sort Externo (Fase 2 - Mezcla de 2 vías)"
         >
           <div className="nav-item-left">
             <span className="nav-index">02</span>
-            <span>Merge Sort 2-Vías</span>
+            <span>Merge Sort Externo</span>
           </div>
           <span className="badge-sem">S2</span>
         </button>
-        <button className="nav-item locked" title="Entrega Semana 3">
+        <button
+          className={`nav-item ${currentModule === 'cubetas' ? 'active' : ''}`}
+          onClick={() => onSelectModule('cubetas')}
+          title="Ordenamiento por Distribución (Cubetas / Bucket Sort)"
+        >
           <div className="nav-item-left">
             <span className="nav-index">03</span>
-            <span>Ordenamiento Cubetas</span>
+            <span>Ord. por Distribución</span>
           </div>
           <span className="badge-sem">S3</span>
         </button>
@@ -109,14 +119,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <span className="badge-sem">S1</span>
         </button>
-        <button className="nav-item locked" title="Entrega Semana 2">
+        <button
+          className={`nav-item ${currentModule === 'asignacion' ? 'active' : ''}`}
+          onClick={() => onSelectModule('asignacion')}
+        >
           <div className="nav-item-left">
             <span className="nav-index">08</span>
             <span>Asignación en Disco</span>
           </div>
           <span className="badge-sem">S2</span>
         </button>
-        <button className="nav-item locked" title="Entrega Semana 3">
+        <button
+          className={`nav-item ${currentModule === 'raid' ? 'active' : ''}`}
+          onClick={() => onSelectModule('raid')}
+        >
           <div className="nav-item-left">
             <span className="nav-index">09</span>
             <span>RAID 0 vs RAID 1</span>

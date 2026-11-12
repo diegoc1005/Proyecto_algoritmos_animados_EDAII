@@ -7,7 +7,11 @@ interface Props {
   csvInputText?: string;
 }
 
-export const ParseoCSVView: React.FC<Props> = ({ stepIdx, totalSteps, csvInputText }) => {
+export const ParseoCSVView: React.FC<Props> = ({
+  stepIdx,
+  totalSteps: _totalSteps,
+  csvInputText
+}) => {
   const CSV_DEFAULT = `ID,Nombre,Departamento,Salario
 101,"García Rayon, Dylan",Ingeniería,45000
 102,"Córdova García, Diego",Sistemas,48000
@@ -22,156 +26,276 @@ export const ParseoCSVView: React.FC<Props> = ({ stepIdx, totalSteps, csvInputTe
   let charGlobalCounter = 0;
 
   return (
-    <div className="module-container" style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      
-      {/* Panel Superior / Métricas Integradas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>CARÁCTER ESCANEADO</span>
-          <span style={{ fontSize: '15px', fontFamily: 'var(--font-mono)', color: 'var(--sig-amber)', fontWeight: 'bold' }}>
-            {pasoActual.charActual === '\n' ? '↵ (SALTO)' : pasoActual.charActual === ' ' ? '␣' : pasoActual.charActual}
+    <>
+      {/* Barra de telemetría de hardware */}
+      <section className="telemetry-strip">
+        <div className="telemetry-cell">
+          <span className="telemetry-label">Carácter Escaneado</span>
+          <span
+            className="telemetry-val"
+            style={{ color: 'var(--sig-amber)' }}
+          >
+            {pasoActual.charActual === '\n'
+              ? '↵ (LF)'
+              : pasoActual.charActual === ' '
+              ? '␣ (SPC)'
+              : pasoActual.charActual || 'EOF'}
+          </span>
+          <span className="telemetry-sub">
+            Offset de stream: #{pasoActual.indiceChar}
           </span>
         </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>ESTADO DE MÁQUINA</span>
-          <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--sig-ice)', fontWeight: 'bold' }}>
+
+        <div className="telemetry-cell">
+          <span className="telemetry-label">Estado del Autómata (FSM)</span>
+          <span
+            className="telemetry-val"
+            style={{ fontSize: '14px', color: 'var(--sig-ice)' }}
+          >
             {pasoActual.estadoMaquina}
           </span>
+          <span className="telemetry-sub">
+            Análisis léxico sin usar .split()
+          </span>
         </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>CAMPO EN CONSTRUCCIÓN</span>
-          <span style={{ fontSize: '13px', fontFamily: 'var(--font-mono)', color: 'var(--success)', fontWeight: 'bold' }}>
+
+        <div className="telemetry-cell">
+          <span className="telemetry-label">Buffer de Campo Actual</span>
+          <span
+            className="telemetry-val"
+            style={{ fontSize: '15px', color: 'var(--sig-emerald)' }}
+          >
             "{pasoActual.campoActual}"
           </span>
-        </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>FILAS PARSEADAS</span>
-          <span style={{ fontSize: '15px', fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 'bold' }}>
-            {pasoActual.filasResultantes.length}
+          <span className="telemetry-sub">
+            {pasoActual.filaActual.length} columnas en fila activa
           </span>
         </div>
-      </div>
 
-      {/* Grid Central: Búfer de Caracteres y Matriz RAM en Filas Correctas */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px' }}>
-        
-        {/* Vista de Búfer Estilo Bloques Hexadecimales */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '14px' }}>
-          <h3 style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--sig-amber)', margin: '0 0 6px 0' }}>🗂️ Flujo de Entrada: Búfer de Caracteres (FSM)</h3>
-          <div 
-            style={{ 
-              background: 'rgba(0, 0, 0, 0.25)', 
-              padding: '10px', 
-              borderRadius: '6px', 
-              border: '1px solid var(--border)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              maxHeight: '300px',
-              overflowY: 'auto'
-            }}
+        <div className="telemetry-cell">
+          <span className="telemetry-label">Filas Emitidas en RAM</span>
+          <span
+            className="telemetry-val"
+            style={{ color: 'var(--sig-violet)' }}
           >
-            {lineas.map((linea, lIdx) => {
-              const offsetHex = '0x' + (lIdx * 40).toString(16).toUpperCase().padStart(2, '0');
-              const charsDeLinea = linea.split('');
-              
-              return (
-                <div key={lIdx} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--ink-muted)', minWidth: '36px' }}>
-                    {offsetHex}
-                  </span>
-                  <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
-                    {charsDeLinea.map((char, cIdxLoc) => {
-                      const absoluteIdx = charGlobalCounter++;
-                      const isCurrent = absoluteIdx === pasoActual.indiceChar;
-                      
-                      return (
-                        <div
-                          key={cIdxLoc}
-                          style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '12px',
-                            width: '22px',
-                            height: '26px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '3px',
-                            backgroundColor: isCurrent ? 'var(--sig-amber)' : 'rgba(255, 255, 255, 0.03)',
-                            color: isCurrent ? '#000' : 'var(--ink)',
-                            border: isCurrent ? '2px solid #fff' : '1px solid var(--border)',
-                            fontWeight: isCurrent ? 'bold' : 'normal',
-                            boxShadow: isCurrent ? '0 0 8px rgba(245, 158, 11, 0.6)' : 'none',
-                          }}
-                          title={`Índice: ${absoluteIdx}, Carácter: '${char}'`}
-                        >
-                          {char === ' ' ? '·' : char}
-                        </div>
-                      );
-                    })}
-                    {lIdx < lineas.length - 1 && (() => {
-                      const nlIdx = charGlobalCounter++;
-                      const isCurrentNl = nlIdx === pasoActual.indiceChar;
-                      return (
-                        <div
-                          key="nl"
-                          style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '10px',
-                            padding: '0 4px',
-                            height: '26px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '3px',
-                            backgroundColor: isCurrentNl ? 'var(--sig-amber)' : 'rgba(255, 255, 255, 0.03)',
-                            color: isCurrentNl ? '#000' : 'var(--ink-muted)',
-                            border: isCurrentNl ? '2px solid #fff' : '1px solid var(--border)',
-                          }}
-                        >
-                          ↵
-                        </div>
-                      );
-                    })()}
+            {pasoActual.filasResultantes.length}
+          </span>
+          <span className="telemetry-sub">
+            Tabla 2D estructurada en memoria
+          </span>
+        </div>
+      </section>
+
+      {/* Escenario Principal */}
+      <section className="canvas-stage">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1.2fr 1fr',
+            gap: '16px'
+          }}
+        >
+          {/* Panel 1: Flujo de Entrada de Caracteres */}
+          <div className="panel">
+            <div className="panel-header">
+              <div className="panel-title">
+                <svg className="icon" viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                <span>FLUJO DE ENTRADA: BÚFER DE CARACTERES (STREAMING)</span>
+              </div>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11px',
+                  color: 'var(--sig-amber)'
+                }}
+              >
+                CURSOR EN BYTE [{pasoActual.indiceChar}]
+              </span>
+            </div>
+
+            <div className="byte-stream-grid">
+              {lineas.map((linea, lIdx) => {
+                const offsetHex =
+                  '0x' +
+                  (lIdx * 40).toString(16).toUpperCase().padStart(2, '0');
+                const charsDeLinea = linea.split('');
+
+                return (
+                  <div key={lIdx} className="stream-row">
+                    <span className="addr-hex">{offsetHex}</span>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '3px',
+                        flexWrap: 'wrap'
+                      }}
+                    >
+                      {charsDeLinea.map((char, cIdxLoc) => {
+                        const absoluteIdx = charGlobalCounter++;
+                        const isCurrent =
+                          absoluteIdx === pasoActual.indiceChar;
+                        const isPast = absoluteIdx < pasoActual.indiceChar;
+
+                        return (
+                          <div
+                            key={cIdxLoc}
+                            className={`byte-box ${
+                              isCurrent
+                                ? 'byte-current-read byte-pointer'
+                                : isPast
+                                ? 'byte-history'
+                                : ''
+                            }`}
+                            data-offset={
+                              isCurrent ? `#${absoluteIdx}` : undefined
+                            }
+                            title={`Índice: ${absoluteIdx}, Carácter: '${char}'`}
+                          >
+                            {char === ' ' ? '·' : char}
+                          </div>
+                        );
+                      })}
+                      {lIdx < lineas.length - 1 &&
+                        (() => {
+                          const nlIdx = charGlobalCounter++;
+                          const isCurrentNl = nlIdx === pasoActual.indiceChar;
+                          const isPastNl = nlIdx < pasoActual.indiceChar;
+                          return (
+                            <div
+                              key="nl"
+                              className={`byte-box ${
+                                isCurrentNl
+                                  ? 'byte-current-read byte-pointer'
+                                  : isPastNl
+                                  ? 'byte-history'
+                                  : ''
+                              }`}
+                              data-offset={
+                                isCurrentNl ? `#${nlIdx}` : undefined
+                              }
+                              title="Salto de línea (\\n)"
+                            >
+                              ↵
+                            </div>
+                          );
+                        })()}
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Panel 2: Matriz Resultante en RAM */}
+          <div className="panel">
+            <div className="panel-header">
+              <div className="panel-title">
+                <svg className="icon" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M3 9h18" />
+                  <path d="M9 21V9" />
+                </svg>
+                <span>MATRIZ ESTRUCTURADA 2D EN MEMORIA RAM</span>
+              </div>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11px',
+                  color: 'var(--ink-muted)'
+                }}
+              >
+                {pasoActual.filasResultantes.length} FILAS COMPLETADAS
+              </span>
+            </div>
+
+            <div
+              style={{
+                overflowX: 'auto',
+                background: 'var(--bg-canvas)',
+                padding: '10px',
+                borderRadius: '6px',
+                border: '1px solid var(--border-hairline)',
+                minHeight: '220px'
+              }}
+            >
+              {pasoActual.filasResultantes.length === 0 &&
+              pasoActual.filaActual.length === 0 ? (
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '12px',
+                    color: 'var(--ink-muted)',
+                    textAlign: 'center',
+                    padding: '40px 10px'
+                  }}
+                >
+                  [ TABLA EN ESPERA DE REGISTROS PARSEADOS ]
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Vista de Tabla Resultante en RAM (Arreglada en Filas y Columnas Correctas) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '14px' }}>
-          <h3 style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--sig-amber)', margin: '0 0 6px 0' }}>📊 Matriz Estructurada en RAM</h3>
-          <div style={{ overflowX: 'auto', background: 'rgba(0, 0, 0, 0.25)', padding: '8px', borderRadius: '6px', border: '1px solid var(--border)', maxHeight: '300px', overflowY: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
-              <tbody>
-                {pasoActual.filasResultantes.map((fila, rIdx) => (
-                  <tr key={rIdx} style={{ borderBottom: '1px solid var(--border)' }}>
-                    {fila.map((val, cIdx) => (
-                      <td key={cIdx} style={{ padding: '6px 8px', color: rIdx === 0 ? 'var(--sig-amber)' : 'inherit', fontWeight: rIdx === 0 ? 'bold' : 'normal' }}>
-                        {val}
-                      </td>
+              ) : (
+                <table
+                  style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '11.5px'
+                  }}
+                >
+                  <tbody>
+                    {pasoActual.filasResultantes.map((fila, rIdx) => (
+                      <tr
+                        key={rIdx}
+                        style={{
+                          borderBottom: '1px solid var(--border-hairline)'
+                        }}
+                      >
+                        {fila.map((val, cIdx) => (
+                          <td
+                            key={cIdx}
+                            style={{
+                              padding: '7px 9px',
+                              color:
+                                rIdx === 0
+                                  ? 'var(--sig-amber)'
+                                  : 'var(--ink-primary)',
+                              fontWeight: rIdx === 0 ? 700 : 400
+                            }}
+                          >
+                            {val}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    {pasoActual.filaActual.length > 0 && (
+                      <tr
+                        style={{
+                          background:
+                            'color-mix(in oklch, var(--sig-emerald) 10%, transparent)',
+                          borderBottom: '1px dashed var(--sig-emerald)'
+                        }}
+                      >
+                        {pasoActual.filaActual.map((val, cIdx) => (
+                          <td
+                            key={`act-${cIdx}`}
+                            style={{
+                              padding: '7px 9px',
+                              color: 'var(--sig-emerald)'
+                            }}
+                          >
+                            {val}
+                          </td>
+                        ))}
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
         </div>
-
-      </div>
-
-      {/* Barra de Estado Inferior con la Explicación del Paso */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-        <span style={{ background: 'var(--sig-amber)', color: '#000', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
-          {pasoActual.estadoMaquina}
-        </span>
-        <span style={{ fontSize: '13px', fontFamily: 'var(--font-mono)' }}>
-          {pasoActual.descripcion}
-        </span>
-      </div>
-
-    </div>
+      </section>
+    </>
   );
 };

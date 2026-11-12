@@ -1,4 +1,13 @@
-export type ModuleId = 'mezcla' | 'merge2vias' | 'escaneo' | 'indice' | 'seek'| 'csv';
+export type ModuleId =
+  | 'mezcla'
+  | 'merge2vias'
+  | 'cubetas'
+  | 'escaneo'
+  | 'indice'
+  | 'csv'
+  | 'seek'
+  | 'asignacion'
+  | 'raid';
 
 // =========================================================================
 // 1. TIPOS PARA ORDENAMIENTO EXTERNO (DIEGO CÓRDOVA)
@@ -45,10 +54,44 @@ export interface StepMerge2Vias {
   cintaA: number[];
   cintaB: number[];
   cintaSalida: number[];
-  punteroA: number; // Índice actual en Cinta A
-  punteroB: number; // Índice actual en Cinta B
+  punteroA: number;
+  punteroB: number;
   elementoSeleccionado: { valor: number; origen: 'A' | 'B' } | null;
   comparaciones: number;
+  accesos_io_lectura: number;
+  accesos_io_escritura: number;
+  explicacion: string;
+}
+
+// --- SEMANA 3: ORDENAMIENTO POR DISTRIBUCIÓN (CUBETAS) ---
+export type EstadoCubetas =
+  | 'INICIO'
+  | 'DISTRIBUYENDO'
+  | 'ORDENANDO_CUBETA'
+  | 'CONCATENANDO'
+  | 'FINALIZADO';
+
+export interface CubetaInfo {
+  id: number;
+  etiqueta: string;
+  rangoMin: number;
+  rangoMax: number;
+  elementos: number[];
+  ordenada: boolean;
+  vaciada: boolean;
+}
+
+export interface StepCubetas {
+  paso: number;
+  fase: string;
+  estado: EstadoCubetas;
+  cintaEntrada: number[];
+  indiceLectura: number;
+  elementoEnTransito: { valor: number; cubetaDestino: number } | null;
+  cubetaActiva: number | null;
+  cubetas: CubetaInfo[];
+  cintaSalida: number[];
+  comparaciones_cpu: number;
   accesos_io_lectura: number;
   accesos_io_escritura: number;
   explicacion: string;
@@ -130,8 +173,10 @@ export interface PasoParseoCSV {
 }
 
 // =========================================================================
-// 3. TIPOS PARA PUNTERO DE ARCHIVO SEEK, READ Y TELL (MAURO ROBLES)
+// 3. TIPOS PARA SISTEMAS DE ARCHIVOS (MAURO ROBLES)
 // =========================================================================
+
+// --- SEMANA 1: PUNTERO SEEK, READ Y TELL ---
 export type TipoSyscall = 'INIT' | 'TELL' | 'SEEK' | 'READ';
 export type WhenceMode = 0 | 1 | 2;
 
@@ -157,5 +202,88 @@ export interface StepSeek {
   leidos_acumulados: number[];
   complejidad: string;
   log: LogConsolaEntry[];
+  explicacion: string;
+}
+
+// --- SEMANA 2: ASIGNACIÓN DE ESPACIO EN DISCO ---
+export type EstrategiaAsignacion = 'contigua' | 'enlazada' | 'indexada';
+
+export interface BloqueDisco {
+  id: number;
+  archivoId: string | null;
+  color: string;
+  tipo: 'libre' | 'datos' | 'inodo';
+  siguiente: number | null; // Puntero para asignación enlazada
+  inodoBloques?: number[]; // Lista de punteros de bloques de datos si es un Inodo
+}
+
+export interface ArchivoDisco {
+  id: string;
+  nombre: string;
+  color: string;
+  tamBloques: number;
+  bloqueInicio: number; // Para contigua o enlazada
+  bloqueInodo?: number; // Para indexada
+  bloquesOcupados: number[];
+}
+
+export interface StepAsignacion {
+  paso: number;
+  estado: string;
+  estrategia: EstrategiaAsignacion;
+  bloques: BloqueDisco[];
+  archivos: ArchivoDisco[];
+  bloqueActivo: number | null;
+  bloquesRecorridos: number[];
+  saltosCabezal: number;
+  fragmentacionExterna: number; // Porcentaje de espacio libre que no puede usarse en contigua
+  bloquesLibresTotales: number;
+  explicacion: string;
+}
+
+// --- SEMANA 3: RAID 0 (STRIPING) VS RAID 1 (MIRRORING) ---
+export type NivelRaid = 'raid0' | 'raid1';
+export type EscenarioRaid = 'escritura' | 'fallo_disco';
+
+export interface BloqueRaid {
+  id: string;
+  etiqueta: string;
+  payload: string;
+  color: string;
+}
+
+export interface SectorDiscoRaid {
+  sectorIdx: number;
+  bloque: BloqueRaid | null;
+  escribiendoAhora: boolean;
+  leyendoAhora: boolean;
+}
+
+export interface StepRaid {
+  paso: number;
+  estado:
+    | 'INICIO'
+    | 'DESPACHANDO_CONTROLADORA'
+    | 'ESCRIBIENDO_DISCOS'
+    | 'FALLO_FISICO_DISCO1'
+    | 'RECONSTRUYENDO_LECTURA'
+    | 'COMPLETADO';
+  nivel: NivelRaid;
+  escenario: EscenarioRaid;
+  colaEntrada: BloqueRaid[];
+  indiceBloqueActual: number;
+  disco0: SectorDiscoRaid[];
+  disco1: SectorDiscoRaid[];
+  disco1Fallido: boolean;
+  archivoReconstruido: Array<{
+    id: string;
+    payload: string;
+    origen: 'DISCO 0' | 'DISCO 1' | 'PERDIDO (CORRUPTO)';
+    integro: boolean;
+  }>;
+  ciclosRelojIO: number;
+  operacionesFisicasDisco: number;
+  capacidadEfectivaPct: number;
+  toleranciaFallos: string;
   explicacion: string;
 }
