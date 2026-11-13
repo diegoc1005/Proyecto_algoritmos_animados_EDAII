@@ -66,20 +66,40 @@ export const MezclaView: React.FC<MezclaViewProps> = ({ step }) => {
             </div>
 
             {step.comparando && step.valores_comparados ? (
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11.5px',
-                  color: step.es_ruptura ? 'var(--sig-coral)' : 'var(--sig-emerald)'
-                }}
-              >
-                A[{step.comparando[1]}]={step.valores_comparados[1]}{' '}
-                {step.es_ruptura ? '<' : '≥'} A[{step.comparando[0]}]=
-                {step.valores_comparados[0]} &nbsp;·&nbsp;{' '}
-                {step.es_ruptura
-                  ? 'INVERSIÓN DETECTADA (CORTE)'
-                  : 'ORDEN PRESERVADO'}
-              </span>
+              step.estado === 'FUSIONANDO' ? (
+                <span
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '11.5px',
+                    color: 'var(--sig-amber)'
+                  }}
+                >
+                  FUSIÓN 2-VÍAS: Izq={step.valores_comparados[0]} vs Der=
+                  {step.valores_comparados[1]} &nbsp;→&nbsp; Pasa el menor (
+                  {Math.min(
+                    step.valores_comparados[0],
+                    step.valores_comparados[1]
+                  )}
+                  )
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '11.5px',
+                    color: step.es_ruptura
+                      ? 'var(--sig-coral)'
+                      : 'var(--sig-emerald)'
+                  }}
+                >
+                  A[{step.comparando[1]}]={step.valores_comparados[1]}{' '}
+                  {step.es_ruptura ? '<' : '≥'} A[{step.comparando[0]}]=
+                  {step.valores_comparados[0]} &nbsp;·&nbsp;{' '}
+                  {step.es_ruptura
+                    ? 'INVERSIÓN DETECTADA (CORTE)'
+                    : 'ORDEN PRESERVADO'}
+                </span>
+              )
             ) : (
               <span
                 style={{
@@ -178,6 +198,200 @@ export const MezclaView: React.FC<MezclaViewProps> = ({ step }) => {
                 : 'Fusión de 2 vías sin usar Array.sort()'}
             </span>
           </div>
+
+          {step.detalle_fusion && (
+            <div
+              style={{
+                background: 'oklch(0.115 0.005 265)',
+                border: '1px solid var(--sig-amber)',
+                borderRadius: '8px',
+                padding: '12px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11px'
+                }}
+              >
+                <span style={{ color: 'var(--sig-amber)', fontWeight: 700 }}>
+                  ⚡ PROCESADOR DE FUSIÓN 2-VÍAS EN CURSO (PASADA{' '}
+                  {step.detalle_fusion.pasada})
+                </span>
+                <span style={{ color: 'var(--ink-secondary)' }}>
+                  {step.detalle_fusion.comparandoPar
+                    ? `Comparando frente a frente: ${step.detalle_fusion.comparandoPar[0]} vs ${step.detalle_fusion.comparandoPar[1]}`
+                    : 'Corrida fusionada y consolidada en cinta'}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr 1.35fr',
+                  gap: '10px',
+                  alignItems: 'center'
+                }}
+              >
+                {/* Sub-corrida Izquierda */}
+                <div
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '6px',
+                    padding: '8px 10px'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '10px',
+                      color: 'var(--sig-emerald)',
+                      marginBottom: '6px'
+                    }}
+                  >
+                    SUB-CORRIDA IZQ (pIzq)
+                  </div>
+                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                    {step.detalle_fusion.corridaIzq.map((v, idx) => {
+                      const activeIdx =
+                        step.detalle_fusion!.origenSeleccionado === 'IZQ'
+                          ? step.detalle_fusion!.punteroIzq - 1
+                          : step.detalle_fusion!.punteroIzq;
+                      const isHead =
+                        step.detalle_fusion!.origenSeleccionado !==
+                          'COMPLETADA' && idx === activeIdx;
+                      const isDone = idx < activeIdx;
+                      return (
+                        <span
+                          key={idx}
+                          className="run-cell"
+                          style={{
+                            opacity: isDone ? 0.32 : 1,
+                            borderColor: isHead
+                              ? 'var(--sig-amber)'
+                              : 'var(--border-subtle)',
+                            background: isHead
+                              ? 'color-mix(in oklch, var(--sig-amber) 22%, var(--bg-elevated))'
+                              : undefined
+                          }}
+                        >
+                          {v}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Sub-corrida Derecha */}
+                <div
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '6px',
+                    padding: '8px 10px'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '10px',
+                      color: 'var(--sig-ice)',
+                      marginBottom: '6px'
+                    }}
+                  >
+                    SUB-CORRIDA DER (pDer)
+                  </div>
+                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                    {step.detalle_fusion.corridaDer.map((v, idx) => {
+                      const activeIdx =
+                        step.detalle_fusion!.origenSeleccionado === 'DER'
+                          ? step.detalle_fusion!.punteroDer - 1
+                          : step.detalle_fusion!.punteroDer;
+                      const isHead =
+                        step.detalle_fusion!.origenSeleccionado !==
+                          'COMPLETADA' && idx === activeIdx;
+                      const isDone = idx < activeIdx;
+                      return (
+                        <span
+                          key={idx}
+                          className="run-cell"
+                          style={{
+                            opacity: isDone ? 0.32 : 1,
+                            borderColor: isHead
+                              ? 'var(--sig-amber)'
+                              : 'var(--border-subtle)',
+                            background: isHead
+                              ? 'color-mix(in oklch, var(--sig-amber) 22%, var(--bg-elevated))'
+                              : undefined
+                          }}
+                        >
+                          {v}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Buffer de salida de la fusión actual */}
+                <div
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--sig-emerald)',
+                    borderRadius: '6px',
+                    padding: '8px 10px'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '10px',
+                      color: 'var(--sig-emerald)',
+                      marginBottom: '6px',
+                      display: 'flex',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <span>RESULTADO ORDENADO PASO A PASO</span>
+                    <span>
+                      {step.detalle_fusion.bufferFusion.length} /{' '}
+                      {step.detalle_fusion.corridaIzq.length +
+                        step.detalle_fusion.corridaDer.length}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                    {step.detalle_fusion.bufferFusion.map((v, idx) => {
+                      const isNewest =
+                        idx === step.detalle_fusion!.bufferFusion.length - 1;
+                      return (
+                        <span
+                          key={idx}
+                          className="run-cell"
+                          style={{
+                            borderColor: isNewest
+                              ? 'var(--sig-emerald)'
+                              : 'var(--border-subtle)',
+                            background: isNewest
+                              ? 'color-mix(in oklch, var(--sig-emerald) 24%, var(--bg-elevated))'
+                              : undefined,
+                            color: 'var(--ink-primary)'
+                          }}
+                        >
+                          {v}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="runs-lanes">
             {step.corridas.map((run, idx) => {

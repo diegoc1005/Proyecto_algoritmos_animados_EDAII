@@ -22,6 +22,19 @@ export type EstadoMezcla =
   | 'FUSIONANDO'
   | 'FINALIZADO';
 
+export interface DetalleFusionMezcla {
+  pasada: number;
+  idxCorridaIzq: number;
+  idxCorridaDer: number;
+  corridaIzq: number[];
+  corridaDer: number[];
+  punteroIzq: number;
+  punteroDer: number;
+  comparandoPar: [number, number] | null;
+  bufferFusion: number[];
+  origenSeleccionado: 'IZQ' | 'DER' | 'REMANENTE' | 'COMPLETADA';
+}
+
 export interface StepMezcla {
   paso: number;
   fase: string;
@@ -33,6 +46,7 @@ export interface StepMezcla {
   es_ruptura?: boolean;
   rupturas: number[];
   corridas: number[][];
+  detalle_fusion?: DetalleFusionMezcla;
   comparaciones: number;
   accesos_io: number;
   explicacion: string;

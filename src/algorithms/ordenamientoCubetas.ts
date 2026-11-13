@@ -30,7 +30,7 @@ function clonarCubetas(cubetas: CubetaInfo[]): CubetaInfo[] {
  * en TypeScript puro (sin usar Array.prototype.sort).
  * Devuelve el nuevo arreglo ordenado y la cantidad exacta de comparaciones de CPU.
  */
-function ordenarCubetaManual(arr: number[]): {
+export function ordenarCubetaManual(arr: number[]): {
   ordenado: number[];
   comparaciones: number;
 } {
@@ -214,31 +214,63 @@ export function generarPasosOrdenamientoCubetas(
     const bloquesCargaCubeta = Math.ceil(cubeta.elementos.length / B);
     ioLectura += bloquesCargaCubeta;
 
-    const antesStr = cubeta.elementos.join(', ');
-    const { ordenado, comparaciones } = ordenarCubetaManual(cubeta.elementos);
-    comparacionesCpu += comparaciones;
-    cubeta.elementos = ordenado;
-    cubeta.ordenada = true;
-    const despuesStr = cubeta.elementos.join(', ');
+    if (cubeta.elementos.length === 1) {
+      cubeta.ordenada = true;
+      pasos.push({
+        paso: pasos.length,
+        fase: 'FASE 2 · ORDENAMIENTO LOCAL EN RAM',
+        estado: 'ORDENANDO_CUBETA',
+        cintaEntrada: [...entrada],
+        indiceLectura: entrada.length,
+        elementoEnTransito: null,
+        cubetaActiva: b,
+        cubetas: clonarCubetas(cubetas),
+        cintaSalida: [...salida],
+        comparaciones_cpu: comparacionesCpu,
+        accesos_io_lectura: ioLectura,
+        accesos_io_escritura: ioEscritura,
+        explicacion: `${cubeta.etiqueta} tiene solo 1 elemento ([${cubeta.elementos[0]}]); ya está ordenada en RAM (0 comparaciones).`
+      });
+    } else {
+      // Ejecutar Insertion Sort paso a paso dentro de la cubeta activa
+      for (let i = 1; i < cubeta.elementos.length; i++) {
+        const clave = cubeta.elementos[i];
+        let j = i - 1;
+        let compsEnPaso = 0;
 
-    pasos.push({
-      paso: pasos.length,
-      fase: 'FASE 2 · ORDENAMIENTO LOCAL EN RAM',
-      estado: 'ORDENANDO_CUBETA',
-      cintaEntrada: [...entrada],
-      indiceLectura: entrada.length,
-      elementoEnTransito: null,
-      cubetaActiva: b,
-      cubetas: clonarCubetas(cubetas),
-      cintaSalida: [...salida],
-      comparaciones_cpu: comparacionesCpu,
-      accesos_io_lectura: ioLectura,
-      accesos_io_escritura: ioEscritura,
-      explicacion:
-        cubeta.elementos.length === 1
-          ? `${cubeta.etiqueta} tiene solo 1 elemento ([${despuesStr}]); ya está trivialmente ordenada en RAM (0 comparaciones).`
-          : `Se carga ${cubeta.etiqueta} ([${antesStr}]) en RAM y se ordena localmente con Insertion Sort manual → [${despuesStr}] (${comparaciones} comparaciones de CPU).`
-    });
+        while (j >= 0) {
+          compsEnPaso++;
+          comparacionesCpu++;
+          if (cubeta.elementos[j] > clave) {
+            cubeta.elementos[j + 1] = cubeta.elementos[j];
+            j--;
+          } else {
+            break;
+          }
+        }
+        cubeta.elementos[j + 1] = clave;
+
+        if (i === cubeta.elementos.length - 1) {
+          cubeta.ordenada = true;
+        }
+
+        pasos.push({
+          paso: pasos.length,
+          fase: 'FASE 2 · ORDENAMIENTO LOCAL EN RAM',
+          estado: 'ORDENANDO_CUBETA',
+          cintaEntrada: [...entrada],
+          indiceLectura: entrada.length,
+          elementoEnTransito: null,
+          cubetaActiva: b,
+          cubetas: clonarCubetas(cubetas),
+          cintaSalida: [...salida],
+          comparaciones_cpu: comparacionesCpu,
+          accesos_io_lectura: ioLectura,
+          accesos_io_escritura: ioEscritura,
+          explicacion: `Insertion Sort en ${cubeta.etiqueta} (iteración ${i}/${cubeta.elementos.length - 1}): Inserta el valor ${clave} en su posición ordenada → [${cubeta.elementos.join(', ')}] (${compsEnPaso} comp. en RAM).`
+        });
+      }
+    }
   }
 
   // =========================================================================

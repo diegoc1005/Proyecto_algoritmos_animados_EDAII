@@ -185,7 +185,7 @@ export function generarPasosMezclaNatural(
   }
 
   // -----------------------------------------------------------------
-  // FASE 2: FUSIÓN ITERATIVA DE CORRIDAS ADYACENTES (SIN ATAJOS STDLIB)
+  // FASE 2: FUSIÓN ITERATIVA DE CORRIDAS ADYACENTES PASO A PASO (2 PUNTEROS)
   // -----------------------------------------------------------------
   let numPasada = 1;
   while (corridasActuales.length > 1) {
@@ -194,25 +194,107 @@ export function generarPasosMezclaNatural(
 
     while (idxC < corridasActuales.length) {
       if (idxC + 1 < corridasActuales.length) {
-        const cIzq = corridasActuales[idxC];
-        const cDer = corridasActuales[idxC + 1];
-        const { resultado: fusionada, comps: compsMerge } =
-          fusionarDosCorridasManual(cIzq, cDer);
+        const cIzq = clonarArreglo(corridasActuales[idxC]);
+        const cDer = clonarArreglo(corridasActuales[idxC + 1]);
 
-        comparaciones += compsMerge;
-        const elementosInvolucrados = cIzq.length + cDer.length;
-        bloquesIo += Math.floor((elementosInvolucrados + factorB - 1) / factorB);
+        // Estado de las corridas antes de consolidar esta pareja
+        const vistaAntesDePar: number[][] = clonarMatriz(nuevasCorridas);
+        for (let r = idxC; r < corridasActuales.length; r++) {
+          vistaAntesDePar.push(clonarArreglo(corridasActuales[r]));
+        }
+        const cintaAntesDePar = aplanarCorridas(vistaAntesDePar);
+        const rupturasAntesDePar = calcularRupturasDesdeCorridas(vistaAntesDePar);
 
-        nuevasCorridas.push(fusionada);
+        // Calcular offsets en la cinta principal para resaltar los dos elementos que compiten
+        let offsetIzq = 0;
+        for (let r = 0; r < nuevasCorridas.length; r++) {
+          offsetIzq += nuevasCorridas[r].length;
+        }
+        const offsetDer = offsetIzq + cIzq.length;
 
-        // Construir estado intermedio de las corridas tras esta fusión parcial
-        const vistaCorridas: number[][] = clonarMatriz(nuevasCorridas);
-        for (let r = idxC + 2; r < corridasActuales.length; r++) {
-          vistaCorridas.push(clonarArreglo(corridasActuales[r]));
+        const bufferFusion: number[] = [];
+        let pIzq = 0;
+        let pDer = 0;
+
+        // Comparación elemento por elemento con dos punteros (pIzq y pDer)
+        while (pIzq < cIzq.length && pDer < cDer.length) {
+          comparaciones += 1;
+          const valIzq = cIzq[pIzq];
+          const valDer = cDer[pDer];
+          const ganaIzq = valIzq <= valDer;
+
+          if ((bufferFusion.length + 1) % factorB === 0) {
+            bloquesIo += 1;
+          }
+
+          if (ganaIzq) {
+            bufferFusion.push(valIzq);
+          } else {
+            bufferFusion.push(valDer);
+          }
+
+          pasos.push({
+            paso: pasos.length,
+            fase: `FASE 2 · FUSIÓN (PASADA ${numPasada})`,
+            estado: 'FUSIONANDO',
+            cinta: clonarArreglo(cintaAntesDePar),
+            indice_actual: offsetIzq + pIzq,
+            comparando: [offsetIzq + pIzq, offsetDer + pDer],
+            valores_comparados: [valIzq, valDer],
+            es_ruptura: false,
+            rupturas: clonarArreglo(rupturasAntesDePar),
+            corridas: clonarMatriz(vistaAntesDePar),
+            detalle_fusion: {
+              pasada: numPasada,
+              idxCorridaIzq: nuevasCorridas.length,
+              idxCorridaDer: nuevasCorridas.length + 1,
+              corridaIzq: clonarArreglo(cIzq),
+              corridaDer: clonarArreglo(cDer),
+              punteroIzq: ganaIzq ? pIzq + 1 : pIzq,
+              punteroDer: ganaIzq ? pDer : pDer + 1,
+              comparandoPar: [valIzq, valDer],
+              bufferFusion: clonarArreglo(bufferFusion),
+              origenSeleccionado: ganaIzq ? 'IZQ' : 'DER'
+            },
+            comparaciones,
+            accesos_io: bloquesIo,
+            explicacion: ganaIzq
+              ? `Pasada #${numPasada}: Compara Izq[${pIzq}]=${valIzq} ≤ Der[${pDer}]=${valDer} → pasa ${valIzq} al buffer de fusión: [${bufferFusion.join(', ')}].`
+              : `Pasada #${numPasada}: Compara Der[${pDer}]=${valDer} < Izq[${pIzq}]=${valIzq} → pasa ${valDer} al buffer de fusión: [${bufferFusion.join(', ')}].`
+          });
+
+          if (ganaIzq) {
+            pIzq += 1;
+          } else {
+            pDer += 1;
+          }
         }
 
-        const cintaActualizada = aplanarCorridas(vistaCorridas);
-        const rupturasActualizadas = calcularRupturasDesdeCorridas(vistaCorridas);
+        // Vaciar remanentes de la corrida que aún tenga elementos
+        const remanentes: number[] = [];
+        while (pIzq < cIzq.length) {
+          remanentes.push(cIzq[pIzq]);
+          bufferFusion.push(cIzq[pIzq]);
+          pIzq += 1;
+        }
+        while (pDer < cDer.length) {
+          remanentes.push(cDer[pDer]);
+          bufferFusion.push(cDer[pDer]);
+          pDer += 1;
+        }
+        bloquesIo += 1;
+
+        nuevasCorridas.push(clonarArreglo(bufferFusion));
+
+        // Construir estado consolidado de las corridas tras terminar de unir esta pareja
+        const vistaConsolidada: number[][] = clonarMatriz(nuevasCorridas);
+        for (let r = idxC + 2; r < corridasActuales.length; r++) {
+          vistaConsolidada.push(clonarArreglo(corridasActuales[r]));
+        }
+
+        const cintaActualizada = aplanarCorridas(vistaConsolidada);
+        const rupturasActualizadas =
+          calcularRupturasDesdeCorridas(vistaConsolidada);
 
         pasos.push({
           paso: pasos.length,
@@ -222,10 +304,25 @@ export function generarPasosMezclaNatural(
           indice_actual: n - 1,
           comparando: null,
           rupturas: rupturasActualizadas,
-          corridas: vistaCorridas,
+          corridas: vistaConsolidada,
+          detalle_fusion: {
+            pasada: numPasada,
+            idxCorridaIzq: nuevasCorridas.length - 1,
+            idxCorridaDer: nuevasCorridas.length - 1,
+            corridaIzq: clonarArreglo(cIzq),
+            corridaDer: clonarArreglo(cDer),
+            punteroIzq: cIzq.length,
+            punteroDer: cDer.length,
+            comparandoPar: null,
+            bufferFusion: clonarArreglo(bufferFusion),
+            origenSeleccionado: 'COMPLETADA'
+          },
           comparaciones,
           accesos_io: bloquesIo,
-          explicacion: `Pasada de Fusión #${numPasada}: Mezclando [${cIzq.join(', ')}] + [${cDer.join(', ')}] → [${fusionada.join(', ')}] (${compsMerge} comparaciones con dos punteros).`
+          explicacion:
+            remanentes.length > 0
+              ? `Pasada #${numPasada}: Se anexa remanente [${remanentes.join(', ')}] sin comparar → Corrida fusionada lista: [${bufferFusion.join(', ')}].`
+              : `Pasada #${numPasada}: Fusión de par completada → [${bufferFusion.join(', ')}].`
         });
 
         idxC += 2;

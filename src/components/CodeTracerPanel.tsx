@@ -38,7 +38,9 @@ const CODE_DEFINITIONS: Record<ModuleId, CodeSnippetDef> = {
       '  }',
       '  corridas.push(actual);',
       '  while (corridas.length > 1) {',
-      '    corridas = fusionarPares2Vias(corridas);',
+      '    // Fusión 2-punteros (pIzq vs pDer)',
+      '    if (izq[pIzq] <= der[pDer]) out.push(izq[pIzq++]);',
+      '    else out.push(der[pDer++]);',
       '  }',
       '  return corridas[0];',
       '}'
@@ -67,12 +69,12 @@ const CODE_DEFINITIONS: Record<ModuleId, CodeSnippetDef> = {
           };
         case 'FUSIONANDO':
           return {
-            lines: [13, 14, 15],
-            note: 'Fusiona pares de corridas adyacentes mediante 2 punteros'
+            lines: [13, 14, 15, 16, 17],
+            note: 'Compara elemento a elemento con 2 punteros (pIzq vs pDer) y construye corrida ordenada'
           };
         case 'FINALIZADO':
           return {
-            lines: [16],
+            lines: [18],
             note: 'Queda 1 sola corrida: el archivo está totalmente ordenado'
           };
         default:
